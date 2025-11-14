@@ -1,0 +1,9 @@
+baseURL = 'https://Authentic-1412.github.io/'
+languageCode = 'en-us'
+title = 'pearl blog'
+theme = "gohugo-theme-ananke"
+
+[params]
+  description = "learning record"
+  author = "pearl"
+  highlight = true
