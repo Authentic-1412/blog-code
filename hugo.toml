@@ -1,9 +1,26 @@
 baseURL = 'https://Authentic-1412.github.io/'
 languageCode = 'en-us'
 title = 'pearl blog'
-theme = "gohugo-theme-ananke"
+theme = "hugo-PaperMod"
 
 [params]
   description = "learning record"
   author = "pearl"
   highlight = true
+  [assets]
+    disableHLJS = true
+
+
+[markup]
+  [markup.highlight]
+    anchorLineNos = false
+    codeFences = true
+    guessSyntax = true
+    hl_Lines = ""
+    lineAnchors = ""
+    lineNoStart =1
+    lineNos = true
+    lineNumbersInTable = true
+    noClasses = false
+    style = "monokai"
+    tabWidth = 4
