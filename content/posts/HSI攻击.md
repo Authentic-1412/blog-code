@@ -25,7 +25,7 @@ title = 'HSI攻击'
     > 10249 = 各类地物占得像素个数。
 
 ## 解混
-![jiehun](../image/jiehun.jpg)
+![jiehun](/image/jiehun.jpg)
 - 我们对**丰度矩阵A**添加扰动，丰度矩阵表示每个像素中不同端元的占比，端元库表示不同端元（纯净）在光谱中200个波段下的值
 
 ## B. Universal Perturbation
@@ -97,8 +97,8 @@ title = 'HSI攻击'
     - 损失 1 (L1)： $\mathbf{L_1} = \mathbf{A} \cdot 5$
     - 损失 2 (L2)： $\mathbf{L_2} = \mathbf{A} \cdot 10$<br>
 该例子的计算图如下
-![计算图](../image/计算图.jpg)
-![detch](../image/detach.png)
+![计算图](/image/计算图.jpg)
+![detch](/image/detach.png)
 
 2. 不涉及optimizer，通过分离计算图获取perturb并在每一次样本训练下更新
 

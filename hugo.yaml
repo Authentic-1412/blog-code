@@ -1,0 +1,96 @@
+baseURL: 'https://Authentic-1412.github.io/'
+languageCode: 'en-us'
+title: 'pearl blog'
+theme: "hugo-PaperMod"
+
+taxonomies:
+  tag: tags
+  category: categories
+menu:
+  main:
+    - identifier: tags
+      name: "Tags"
+      url: /tags/
+      weight: 30
+    - identifier: profile
+      name: "Home"    # 或者叫 "Home"
+      url: "/"           # 指向根目录，即 profileMode 页面
+      weight: 10
+    - identifier: posts
+      name: Posts       # 显示在菜单栏的名称
+      url: /posts/      # 点击跳转到文章列表
+      weight: 10
+    - identifier: search
+      name: Search
+      url: /search/
+      weight: 20
+
+params:
+  description: "learning record"
+  author: "pearl"
+  highlight: true
+  defaultTheme: auto
+  ShowReadingTime: true
+  ShowShareButtons: true
+  showCodeCopyButtons: true
+  ShowToc: true  # 显示目录
+  TocOpen: true
+  
+  homeInfoParams:
+    Title: Welcome to my world!
+    Content: Feel free to learn and communicate~
+  socialIcons: # optional
+    - name: "github"
+      url: "https://github.com/Authentic-1412"
+    - name: "huggingface"
+      url: "https://huggingface.co/dadaland"
+
+
+
+  profileMode:
+    enabled: true
+    title: "Hello!" # optional default will be site title
+    subtitle: "Nice to meet you!"
+    imageUrl: "https://cn.bing.com/th?id=OHR.AndermattSwiss_ZH-CN4112824348_UHD.jpg" # optional
+    imageTitle: "my profile photo" # optional
+    imageWidth: 120 # custom size
+    imageHeight: 120 # custom size
+    buttons:
+      - name: Posts
+        url: "posts"
+      # - name: Github
+      #   url: "https://github.com/"
+
+    socialIcons: # optional
+      - name: "github"
+        url: "https://github.com/Authentic-1412"
+      - name: "huggingface"
+        url: "https://huggingface.co/dadaland"
+
+
+  assets:
+    disableHLJS: true
+
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON # necessary for search
+
+markup:
+  highlight:
+    anchorLineNos: false
+    codeFences: true
+    guessSyntax: true
+    hl_Lines: ""
+    lineAnchors: ""
+    lineNoStart: 1
+    lineNos: true
+    lineNumbersInTable: true
+    noClasses: false
+    style: "monokai"
+    tabWidth: 4
+
+  goldmark:
+    renderer:
+      unsafe: true
