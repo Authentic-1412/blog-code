@@ -1,4 +1,5 @@
-baseURL: 'https://Authentic-1412.github.io/'
+# baseURL: 'https://Authentic-1412.github.io/'
+baseURL: "https://pearlblog.pages.dev/"
 languageCode: 'en-us'
 title: 'pearl blog'
 theme: "hugo-PaperMod"
