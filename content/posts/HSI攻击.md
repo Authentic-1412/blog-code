@@ -1,8 +1,9 @@
-+++
-date = '2025-11-24T20:41:51+08:00'
-draft = false
-title = 'HSI攻击'
-+++
+---
+date: '2025-11-24T20:41:51+08:00'
+draft: false
+title: 'HSI攻击'
+math: true
+---
 
 **abstract：高光谱图像攻击中需要了解的知识**<br>
 **story**：这篇没有story:D
