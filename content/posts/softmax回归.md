@@ -6,9 +6,9 @@ tags: ['d2l','deeplearning']
 categories: []
 math: true
 ---
-**abstract: 李沐动手深度学习--softmax回归的数学原理与从零实现**
-**story**: 什么是适合新手的教程？
-**Attention: 关于语法的讲解主要涉及torch库，其他库的用法可能略有出入**
+**abstract: 李沐动手深度学习--softmax回归的数学原理与从零实现**<br>
+**story**: 什么是适合新手的教程？<br>
+**Attention: 关于语法的讲解主要涉及torch库，其他库的用法可能略有出入**<br>
 
 # 一. 回归 vs 分类
 **本质上：输出连续与否**
@@ -68,7 +68,6 @@ def net(X):
 def cross_entropy(y_hat, y):
     return -torch.log(y_hat[range(len(y_hat)), y] + 1e-9)
 ```
-- 
 - 加一个极小的数防止除数为零
 ## 4.2 主函数
 ### 4.2.1 导入并定义数据集
@@ -146,13 +145,14 @@ for epoch in range(num_epochs):
     print(f"Epoch {epoch+1}, Loss: {(train_loss / n)}")
 ```
 **Attention：**
-- 手动更新参数时要注意切换到`torch.no_grad()`状态。否则会被认为对参数进行了运算，该参数不再是叶子张量，不能查看`grad`属性
-- 每一轮迭代的梯度不能累加，否则会梯度爆炸
+- 手动更新参数时要注意切换到`torch.no_grad()`状态。理由如下：pytorch通过require_grad = True来标志对该参数进行**自动求导**。pytorch的自动求导机制会自动生成计算图（哪个变量由哪些变量计算而来，哪些变量对该变量有梯度贡献，进行加法运算还是乘法运算），方便反向传播时追踪变量，更新其梯度。所以在自动求导监视下的参数不能手动修改其值，以防求导出错（这个逻辑很正常，人为干预改变数值可能使得自动求导出错）。那么想要手动更新参数值时有两种方法：
+    - 使用`weight.data[:]`属性。tensor变量由变量数值和计算图（梯度信息）`.grad`构成。.data属性仅访问数值，不管计算图。仅修改数值，相当于使变量脱离了自动求导机制（不建议）
+    - 使用`with torch.no_grad()`。退出自动求导机制，计算图消失，仅仅改变数值
 - 反向传播时对**平均损失**进行，即所有样本的损失的均值，不要对损失之和反向传播
 - 求loss的时候注意求全局loss
 
 ### 4.2.5 test过程
-···python
+```python
 correct, total, loss_total = 0, 0, 0
 for X, y in test_loader: 
     y_hat = net(X)
@@ -160,7 +160,7 @@ for X, y in test_loader:
     correct += (y_hat.argmax(dim=1).type(y.dtype) == y).sum().item()
     total += y.shape[0]  
 print(f"Accuracy: {correct / total} Test loss: {loss_total / total}")
-···
+```
 - `a.type(B)`:将a转换为B类型 或 a.to(B)
 - `a.dtype`:查看a的数据类型
 
