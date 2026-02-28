@@ -1,0 +1,547 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>pearl blog</title>
+    <link>http://localhost:1313/</link>
+    <description>Recent content on pearl blog</description>
+    <generator>Hugo -- 0.152.2</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 14 Feb 2026 19:24:57 +0800</lastBuildDate>
+    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Softmax回归</title>
+      <link>http://localhost:1313/posts/softmax%E5%9B%9E%E5%BD%92/</link>
+      <pubDate>Sat, 14 Feb 2026 19:24:57 +0800</pubDate>
+      <guid>http://localhost:1313/posts/softmax%E5%9B%9E%E5%BD%92/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;abstract: 李沐动手深度学习&amp;ndash;softmax回归的数学原理与从零实现&lt;/strong&gt;&lt;br&gt;
+&lt;strong&gt;story&lt;/strong&gt;: 什么是适合新手的教程？&lt;br&gt;
+&lt;strong&gt;Attention: 关于语法的讲解主要涉及torch库，其他库的用法可能略有出入&lt;/strong&gt;&lt;br&gt;&lt;/p&gt;
+&lt;h1 id=&#34;一-回归-vs-分类&#34;&gt;一. 回归 vs 分类&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;本质上：输出连续与否&lt;/strong&gt;
+譬如softmax回归，其输出是&lt;strong&gt;预测为某类别的概率&lt;/strong&gt;，是连续值，属于[0, 1]之间，故即使最后用于分类问题，其本质也是一个回归模型&lt;/p&gt;
+&lt;h1 id=&#34;二-神经元与激活函数&#34;&gt;二. 神经元与激活函数&lt;/h1&gt;
+&lt;p&gt;&lt;img alt=&#34;neural&#34; loading=&#34;lazy&#34; src=&#34;http://localhost:1313/image/neural.png&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;21-神经元&#34;&gt;2.1 神经元&lt;/h2&gt;
+&lt;p&gt;所谓神经元，指的是一个运算过程：&lt;code&gt;f(W*X + b)&lt;/code&gt; ，&lt;code&gt;W&lt;/code&gt;是该神经元前一层的权重，&lt;code&gt;X&lt;/code&gt;是该神经元前一层的输出，这两者通常是两个矩阵。b是偏置，决定W*X有多难被激活（对于阶跃函数或ReLu这种激活函数，自变量小于零时函数值为0，故可以通过调节偏置b的值，进而调节W*X被激活的阈值）。而f()就是激活函数。&lt;/p&gt;
+&lt;h2 id=&#34;22-激活函数&#34;&gt;2.2 激活函数&lt;/h2&gt;
+&lt;p&gt;神经网络中，激活函数必须是非线性的，否则网络的层数和深度都没有意义。而激活函数是非线性的，不代表网络一定是非线性的。非线性的网络需要满足两个条件：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;非线性的激活函数&lt;/li&gt;
+&lt;li&gt;复合运算或者高次运算&lt;br&gt;
+在网络中，&lt;strong&gt;复合运算&lt;/strong&gt;就是指&lt;strong&gt;多层网络&lt;/strong&gt;，即至少存在一层隐藏层神经元，两组W权重矩阵的网络&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;三-softmax&#34;&gt;三. softmax&lt;/h1&gt;
+&lt;h2 id=&#34;31-两个作用&#34;&gt;3.1 两个作用&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;非负化&lt;/li&gt;
+&lt;li&gt;将数值映射到0-1区间（概率化）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;32-公式&#34;&gt;3.2 公式&lt;/h2&gt;
+$$\frac{}$$&lt;h1 id=&#34;四代码一般结构&#34;&gt;四.代码一般结构&lt;/h1&gt;
+&lt;h2 id=&#34;41-工具函数&#34;&gt;4.1 工具函数&lt;/h2&gt;
+&lt;h3 id=&#34;411-定义net&#34;&gt;4.1.1 定义net&lt;/h3&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;softmax&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;X&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;):&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;s1&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s1&#34;&gt;    softmax 的 Docstring
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s1&#34;&gt;    
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s1&#34;&gt;    :param X: 二维矩阵，每行代表一个样本，每列代表一个类别，即每行代表一个样本的各类别的得分
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s1&#34;&gt;    &amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;X_exp&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;torch&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;exp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;X&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;example_sum&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;X_exp&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sum&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;dim&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;keepdim&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;kc&#34;&gt;True&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;X_exp&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;example_sum&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;def&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;net&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;X&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;):&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;s1&#34;&gt;&amp;#39;&amp;#39;&amp;#39;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s1&#34;&gt;    net 的 Docstring
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s1&#34;&gt;    batch_size*(H*W) @ (H*W)*num_classes -&amp;gt; batch_size*num_classes
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s1&#34;&gt;    :param X: 输入数据，形状为 (batch_size, 1, 28, 28)，需要先 reshape 成 (batch_size, 784) 才能与权重矩阵 W 相乘.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s1&#34;&gt;    
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;s1&#34;&gt;    &amp;#39;&amp;#39;&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;softmax&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;torch&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;matmul&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;X&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;reshape&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;W&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;shape&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]),&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;W&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;c1&#34;&gt;# 这里reshape不会改变原始数据形状, 也不创建新副本， 数据还是那个数据，这里创建了一个新视图，改变了查看数据的方式&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;-&lt;code&gt;sum(dim = 0)&lt;/code&gt;: dim等于几，shape中第几项就变为1。比如dim = 0，一个[2,3]的矩阵变为了[1,3]，也就是对每一行求和，成了一个列向量；同样地，dim = 1时对每一列求和，成了一个行向量&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>远程服务器常用命令</title>
+      <link>http://localhost:1313/posts/%E8%BF%9C%E7%A8%8B%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/</link>
+      <pubDate>Fri, 06 Feb 2026 17:09:54 +0800</pubDate>
+      <guid>http://localhost:1313/posts/%E8%BF%9C%E7%A8%8B%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;abstract：记录在远程服务器跑代码遇到的问题和常用的命令行语句&lt;/strong&gt;&lt;br&gt;
+&lt;strong&gt;story&lt;/strong&gt;：公用服务器上改代码，显存爆炸后差点把同门进程给鲨了，故作此文以记录&lt;/p&gt;
+&lt;h2 id=&#34;查看gpu状态&#34;&gt;查看GPU状态&lt;/h2&gt;
+&lt;h3 id=&#34;nvidia-smi&#34;&gt;&lt;code&gt;nvidia-smi&lt;/code&gt;:&lt;/h3&gt;
+&lt;p&gt;&lt;img alt=&#34;gpu&#34; loading=&#34;lazy&#34; src=&#34;http://localhost:1313/image/gpu.png&#34;&gt;
+&lt;strong&gt;关注这几个点：&lt;/strong&gt;&lt;br&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;上半张表：GPU信息&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Memory-Usage&lt;/strong&gt;：显存&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Volatile GPU-Util&lt;/strong&gt;：GPU利用率&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;下半张表：进程信息&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;PID&lt;/strong&gt;：进程号（你会发现1152339进程占了两张卡）&lt;/li&gt;
+&lt;li&gt;xorg：Linux的图形化驱动，不用管&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;GPU0上1152339进程占了11个G，这就是我显存炸掉的罪魁祸首！我的进程需要的显存大于24-11=13G，自动卡退了
+这个进程是谁的呢？&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;进程&#34;&gt;进程&lt;/h2&gt;
+&lt;h3 id=&#34;kill--9-1152339&#34;&gt;&lt;code&gt;kill -9 1152339&lt;/code&gt;&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;强行杀死进程&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;ps--u--p-1152339&#34;&gt;&lt;code&gt;ps -u -p 1152339&lt;/code&gt;&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;看看这个进程是谁的&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;ps--ef--grep-1152339&#34;&gt;&lt;code&gt;ps -ef | grep 1152339&lt;/code&gt;&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;搜索所有含有“1152339”名字的进程，并显示完整信息&lt;/li&gt;
+&lt;li&gt;还可以&lt;code&gt;ps -ef | grep yourusername&lt;/code&gt;,查看和你有关的所有进程&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    <item>
+      <title>远程服务器文件传输</title>
+      <link>http://localhost:1313/posts/%E8%BF%9C%E7%A8%8B%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%96%87%E4%BB%B6%E4%BC%A0%E8%BE%93/</link>
+      <pubDate>Fri, 06 Feb 2026 17:09:54 +0800</pubDate>
+      <guid>http://localhost:1313/posts/%E8%BF%9C%E7%A8%8B%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%96%87%E4%BB%B6%E4%BC%A0%E8%BE%93/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;abstract：如何把一份10G的代码从本地传输到远程服务器&lt;/strong&gt;&lt;br&gt;
+&lt;strong&gt;story&lt;/strong&gt;：原来git也会被push死&lt;/p&gt;
+&lt;p&gt;以传输HSI_ATTACK2代码为例&lt;/p&gt;
+&lt;h1 id=&#34;查看子文件夹大小&#34;&gt;查看子文件夹大小&lt;/h1&gt;
+&lt;p&gt;linux：在母目录下输入：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;du -h &amp;ndash;max-depth=1 | sort -hr&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;-h：hunman redable，人类可读&lt;/li&gt;
+&lt;li&gt;&amp;ndash;max-depth=1：最大深度，为1则只统计下一级目录的大小，不会具体到文件&lt;/li&gt;
+&lt;li&gt;|：管道，把数据传输到sort管道里&lt;/li&gt;
+&lt;li&gt;-hr：按易读数字反向排序，h指明白1G比200M大，r指reverse，逆序&lt;br&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;结果：&lt;br&gt;
+&lt;img alt=&#34;alt text&#34; loading=&#34;lazy&#34; src=&#34;http://localhost:1313/image/du.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;把占用大的数据通过rsync传输，git仅传输代码&lt;/strong&gt;&lt;/p&gt;
+&lt;h1 id=&#34;1-git&#34;&gt;1. Git&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;git不能传输过大文件夹，例如这里的10G直接push会连接超时&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;11-gitignore&#34;&gt;1.1. .gitignore&lt;/h2&gt;
+&lt;p&gt;把不想要的文件类型或文件目录写入.gitignore&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;bash:
+nano .gitignore # 创建并打开.gitignore文件
+# 写入
+params/
+logs/
+RESREPORT/
+dataset/
+abundance_matrix/
+# ^X退出编辑
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看文件&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;bash:
+cat .gitignore # 用于查看简短文件 直接将文件内容输出在终端
+less .gitignore # 查看长文件 可翻页 按q退出
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;12-在服务器上建仓库&#34;&gt;1.2. 在服务器上建仓库&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;之前仓库一直都建立在github上，而仓库也可以建立在服务器上，而且仓库可以不托管源代码，只托管代码的“基因”，也就是&amp;ndash;bare，通过克隆仓库复原源代码&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;（本地的wsl上：）&lt;/strong&gt;&lt;br&gt;
+从用du查看的目录大小可以发现，.git托管了所有代码的所有更改，特别臃肿，所以删掉&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;rm -rf .git
+重新初始化(在本地的HSI_ATTACK2目录下)
+git init
+确保已经编辑好.gitignore后，将更改加入暂存区
+git add .
+从暂存区提交到本地仓库（.git）
+git commit -m &amp;ldquo;Initial commit&amp;rdquo;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Stm32小车电路设计</title>
+      <link>http://localhost:1313/posts/stm32%E5%B0%8F%E8%BD%A6%E7%94%B5%E8%B7%AF%E8%AE%BE%E8%AE%A1/</link>
+      <pubDate>Wed, 03 Dec 2025 16:59:26 +0800</pubDate>
+      <guid>http://localhost:1313/posts/stm32%E5%B0%8F%E8%BD%A6%E7%94%B5%E8%B7%AF%E8%AE%BE%E8%AE%A1/</guid>
+      <description>&lt;h1 id=&#34;元件引脚功能&#34;&gt;元件引脚功能&lt;/h1&gt;
+&lt;h2 id=&#34;tb6612&#34;&gt;tb6612&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;左列(连接单片机)&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;PWMA：控制A电机转速 通过PWM的占空比控制电机转速&lt;/li&gt;
+&lt;li&gt;AIN1：和AIN2一起控制A电机转向，电平高低变为0-1信号，即通过两边施力与否控制转向，两两组合：  GPIO-A4
+&lt;ul&gt;
+&lt;li&gt;0-1：正转&lt;/li&gt;
+&lt;li&gt;1-0：反转&lt;/li&gt;
+&lt;li&gt;0-0：空档（两侧均不施力）&lt;/li&gt;
+&lt;li&gt;1-1：刹车（两侧同时施力）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;AIN2 GPIO-A5&lt;/li&gt;
+&lt;li&gt;STBY：控制驱动模块是否工作的开关&lt;/li&gt;
+&lt;li&gt;BIN1：类似AIN1&lt;/li&gt;
+&lt;li&gt;BIN2&lt;/li&gt;
+&lt;li&gt;PWMB&lt;/li&gt;
+&lt;li&gt;GND： 连接单片机接地&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;右列（连接电机）&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;VM：M指的是machine，也就是驱动电机需要的电压（一般为高电压，4.5-15v不等）&lt;/li&gt;
+&lt;li&gt;VCC：cc：逻辑电路，指的是让tb6612这块板子运行起来的电压，一般为3.3v或5v&lt;/li&gt;
+&lt;li&gt;GND：电机接地&lt;/li&gt;
+&lt;li&gt;AO1：连A电机M+&lt;/li&gt;
+&lt;li&gt;AO2：M-&lt;/li&gt;
+&lt;li&gt;BO1：连B电机M-&lt;/li&gt;
+&lt;li&gt;BO2: M+&lt;/li&gt;
+&lt;li&gt;GND：电机接地&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;这三个GND要共地，否则会故障。出现问题时检查是否共地&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;霍尔编码器&#34;&gt;霍尔编码器&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;VCC：3.3v&lt;/li&gt;
+&lt;li&gt;GND&lt;/li&gt;
+&lt;li&gt;A相：接单片机脉冲检测接口&lt;/li&gt;
+&lt;li&gt;B相&lt;/li&gt;
+&lt;li&gt;M+：电机接口，接tb6612的AO1&lt;/li&gt;
+&lt;li&gt;M-：AO2&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;oled屏幕&#34;&gt;oled屏幕&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;VCC&lt;/li&gt;
+&lt;li&gt;GND&lt;/li&gt;
+&lt;li&gt;SCL：接单片机 用于IIC通信&lt;/li&gt;
+&lt;li&gt;SDA：同上&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;mpu6050&#34;&gt;MPU6050&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;VCC&lt;/li&gt;
+&lt;li&gt;GND&lt;/li&gt;
+&lt;li&gt;SCL&lt;/li&gt;
+&lt;li&gt;SDA&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;剩余引脚用于连接电磁传感器形成九轴传感器&lt;/p&gt;
+&lt;/blockquote&gt;</description>
+    </item>
+    <item>
+      <title>HSI攻击</title>
+      <link>http://localhost:1313/posts/hsi%E6%94%BB%E5%87%BB/</link>
+      <pubDate>Mon, 24 Nov 2025 20:41:51 +0800</pubDate>
+      <guid>http://localhost:1313/posts/hsi%E6%94%BB%E5%87%BB/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;abstract：高光谱图像攻击中需要了解的知识&lt;/strong&gt;&lt;br&gt;
+&lt;strong&gt;story&lt;/strong&gt;：这篇没有story:D&lt;/p&gt;
+&lt;h2 id=&#34;a-高光谱图像数据集&#34;&gt;A. 高光谱图像数据集&lt;/h2&gt;
+&lt;blockquote&gt;
+&lt;p&gt;高光谱：像素的记录格式不再是rgb，而是按照光谱波段记录&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&#34;indian-pine&#34;&gt;Indian pine&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;只有一张图片，分辨率为145*145&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;该图片的每个像素作为一个样本，每个像素都由一个200个数字描述，表示各个波段的反射强度，理论上属于0-1&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;这张图拍的主要为&lt;strong&gt;农作物&lt;/strong&gt;，共有16个类别，即10249个样本对应16个类别，包括草地、玉米地、林地等&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Indian Pines 数据集的规模: 145*145*200 (width height 波段数)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;下载得到的数据集形式&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Indian_pines.mat ：原始的Indian Pines 数据集: 145*145*220&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;Indian_pines_corrected.mat 矫正后的Indian Pines 数据集: 145*145*200&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;Indian_pines_gt.mat 标签矩阵 145*145&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;部分内容引自&lt;a href=&#34;https://zhuanlan.zhihu.com/p/347442423&#34;&gt;知乎&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;AVIRIS 成像光谱仪成像波长范围为 0.4-2.5μm，是在连续的 220 个波段对地物连续成像的，但是由于第 104-108，第 150-163 和第 220 个波段不能被水反射，因此，我们一般使用的是剔除了这 20 个波段后剩下的 200 个波段作为研究的对象。&lt;/li&gt;
+&lt;li&gt;145*145 = 21025=10776（背景，黑）+ 10249（多种地物，彩）&lt;br&gt;
+&amp;gt; 10249 = 各类地物占得像素个数。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;解混&#34;&gt;解混&lt;/h2&gt;
+&lt;p&gt;&lt;img alt=&#34;jiehun&#34; loading=&#34;lazy&#34; src=&#34;http://localhost:1313/image/jiehun.jpg&#34;&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;我们对&lt;strong&gt;丰度矩阵A&lt;/strong&gt;添加扰动，丰度矩阵表示每个像素中不同端元的占比，端元库表示不同端元（纯净）在光谱中200个波段下的值&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;b-universal-perturbation&#34;&gt;B. Universal Perturbation&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;算法：在每一轮迭代中都找到$\Delta v$&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;c-经典神经网络的训练逻辑&#34;&gt;C. 经典神经网络的训练逻辑&lt;/h2&gt;
+&lt;h3 id=&#34;dataloader&#34;&gt;DataLoader&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;一个迭代器&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;pbar = tqdm(enumerate(attack_loader), total=len(attack_loader)) 
+    for index, (_, abun, abun_sum, noise, labels, _) in pbar: 
+    # 每次迭代使用一个batch的数据来更新扰动（正常32个，但如果最后一组样本量不足32，那就不足32，不舍弃）
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;用for迭代，每次迭代使用一个batch的数据来更新扰动（正常32个，但如果最后一组样本量不足32，那就不足32，不舍弃）&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>视觉_K230开发实践</title>
+      <link>http://localhost:1313/posts/%E8%A7%86%E8%A7%89-k230%E5%BC%80%E5%8F%91%E5%AE%9E%E8%B7%B5/</link>
+      <pubDate>Tue, 11 Nov 2025 21:57:27 +0800</pubDate>
+      <guid>http://localhost:1313/posts/%E8%A7%86%E8%A7%89-k230%E5%BC%80%E5%8F%91%E5%AE%9E%E8%B7%B5/</guid>
+      <description>&lt;p&gt;&lt;em&gt;记录学习k230的过程&lt;/em&gt;&lt;/p&gt;
+&lt;h2 id=&#34;251111-准备工作学习摄像模块&#34;&gt;25.11.11 准备工作、学习摄像模块&lt;/h2&gt;
+&lt;h3 id=&#34;准备工作&#34;&gt;准备工作&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;固件烧录&lt;/li&gt;
+&lt;li&gt;例程复现&lt;/li&gt;
+&lt;li&gt;找到了ocr（文字识别）现成例程 &lt;br&gt;
+小声：&lt;strong&gt;结合多平台教程文档，如01studio或嘉楠等等，这个没有的例程，另一个说不定有呢&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;摄像模块&#34;&gt;摄像模块&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;k230摄像头架构&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;板子最多搭载三个摄像头&lt;/li&gt;
+&lt;li&gt;每个摄像头可以接入三个不同的处理模块（对输入图像进行加工处理）&lt;/li&gt;
+&lt;li&gt;每个模块（camera_device）有三个输出通道，可以多输出并行&lt;/li&gt;
+&lt;/ul&gt;
+&lt;ol start=&#34;2&#34;&gt;
+&lt;li&gt;摄像头模块编程&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;sensor基础语法&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;创建处理模块&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kn&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;media.sensor&lt;/span&gt; &lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;sensor&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Sensor&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;id&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;width&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;height&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fps&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# 实例化，对应架构中的处理模块&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;id：摄像头id，默认为2&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;width ,height ,fps:&lt;strong&gt;最大&lt;/strong&gt;输出图像参数&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;设置图像输出大小和位置&lt;/strong&gt;&lt;br&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;sensor&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;reset&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;()&lt;/span&gt; &lt;span class=&#34;c1&#34;&gt;# 初始化sensor对象及传感器&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;sensor&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;set_framesize&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;chn&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;CAM_CHN_ID_0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;width&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;640&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;height&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;480&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;sensor&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;set_framesize&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;chn&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;CAM_CHN_ID_3&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;framesize&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Sensor&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;VGA&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;framesize参数对应width、height，表示输出图像分辨率，二者作用相同。&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;framesize = Sensor.VGA即表示640*480分辨率，除此之外，还有Sensor.HD等表示分辨率的代号，这些代号统称为图像帧尺寸&lt;br&gt;&lt;/li&gt;
+&lt;li&gt;chn:channel_number,表示输出通道，即架构中每个模块的三个输出通道&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;设置图像怎么输出、输出位置&lt;/strong&gt;&lt;br&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;  sensor.set_pixformat(pix_format, chn=CAM_CHN_ID_0)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;ol&gt;
+&lt;li&gt;pix_format:输出图像的像素格式，即每个像素在计算机中如何存储，也就是RGB三个通道数据用多少位存储。&lt;br&gt;
+常用有：&lt;br&gt;
+RGB565：R for 5 bits ; G for 6 bits ; B for 5 bits &lt;br&gt;
+RGB888: R G B for 8 bits respectively &lt;br&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;水平与竖直反转&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;  sensor.set_hmirror(True) # 水平
+  sensor.set_vflip(False) # 竖直
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;启动、关闭摄像头&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;  sensor.run()
+  sensor.stop()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;多个摄像头只用启动一次，但要分别关闭&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>个人博客学习笔记</title>
+      <link>http://localhost:1313/posts/%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</link>
+      <pubDate>Mon, 10 Nov 2025 00:00:15 +0800</pubDate>
+      <guid>http://localhost:1313/posts/%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</guid>
+      <description>&lt;h1 id=&#34;个人博客搭建&#34;&gt;个人博客搭建&lt;/h1&gt;
+&lt;p&gt;==========================================================&lt;/p&gt;
+&lt;h2 id=&#34;part-1-hugo搭建并在本地预览&#34;&gt;Part 1. hugo搭建并在本地预览&lt;/h2&gt;
+&lt;h3 id=&#34;251110&#34;&gt;25.11.10.&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;创建博客总站&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;新建文件夹，存放你的博客。在该文件夹下运行&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;hugo new site .&lt;br&gt;
+-初始化站点&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;2&#34;&gt;
+&lt;li&gt;创建一篇文章&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;hugo new posts/这篇博客的名字.md&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;然后，你可以看到在content/posts目录下多了一个md文档&lt;/li&gt;
+&lt;li&gt;编辑完成后将draft改为false，否则不在网页上显示&lt;/li&gt;
+&lt;/ul&gt;
+&lt;ol start=&#34;3&#34;&gt;
+&lt;li&gt;主题&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;git clone你喜欢的主题，并将文件复制到themes文件夹下&lt;/li&gt;
+&lt;li&gt;在hugo.toml（参数文档）中增加：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;theme = &amp;ldquo;hugo-PaperMod&amp;rdquo;
+&lt;strong&gt;别忘记双引号！&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;4&#34;&gt;
+&lt;li&gt;其他设置&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;在hugo.toml（参数文档）中&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[params]&lt;br&gt;
+description = &amp;ldquo;my first blog&amp;rdquo;&lt;br&gt;
+author = &amp;ldquo;pearl&amp;rdquo;&lt;br&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;5&#34;&gt;
+&lt;li&gt;本地预览&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;终端输入&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;hugo server&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;打开终端显示的域名即可&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;251111&#34;&gt;25.11.11&lt;/h3&gt;
+&lt;h4 id=&#34;1-补充wsl中配置代理&#34;&gt;1. 补充：wsl中配置代理&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;之前登录时wsl会提示：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;wsl: 检测到 localhost 代理配置，但未镜像到 WSL。NAT 模式下的 WSL 不支持 localhost 代理。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;这句话有两点值得注意&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;NAT模式：相当于wsl2运行在一个小虚拟机中，该虚拟机有自己的ip：通常为172.&lt;/li&gt;
+&lt;li&gt;镜像模式：作为localhost（windows本机）的镜像映射，windows有啥，wsl就有啥&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h5 id=&#34;配置wsl镜像&#34;&gt;配置WSL镜像&lt;/h5&gt;
+&lt;ol&gt;
+&lt;li&gt;windows的用户目录（30743）下新建建立新文件.wslconfig并写入：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;[wsl2]
+
+networkingMode=mirrored&amp;lt;
+
+autoProxy=true
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol start=&#34;2&#34;&gt;
+&lt;li&gt;重启wsl 提示消失，wsl可以访问github&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;part-2-部署到git-page&#34;&gt;Part 2. 部署到git page&lt;/h2&gt;
+&lt;h3 id=&#34;251114&#34;&gt;25.11.14&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;根据网上“hugo + git page”教程配置即可&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;注意&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>My First Post</title>
+      <link>http://localhost:1313/posts/my-first-post/</link>
+      <pubDate>Sun, 09 Nov 2025 22:27:38 +0800</pubDate>
+      <guid>http://localhost:1313/posts/my-first-post/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;abstrct：梦开始的地方&lt;/strong&gt;&lt;/p&gt;
+&lt;h1 id=&#34;hello-world&#34;&gt;Hello World!&lt;/h1&gt;
+&lt;h2 id=&#34;i-have-borned&#34;&gt;I have borned!&lt;/h2&gt;</description>
+    </item>
+  </channel>
+</rss>

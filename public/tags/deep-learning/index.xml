@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Deep Learning on pearl blog</title>
+    <link>http://localhost:1313/tags/deep-learning/</link>
+    <description>Recent content in Deep Learning on pearl blog</description>
+    <generator>Hugo -- 0.152.2</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 10 Nov 2025 00:00:15 +0800</lastBuildDate>
+    <atom:link href="http://localhost:1313/tags/deep-learning/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>个人博客学习笔记</title>
+      <link>http://localhost:1313/posts/%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</link>
+      <pubDate>Mon, 10 Nov 2025 00:00:15 +0800</pubDate>
+      <guid>http://localhost:1313/posts/%E4%B8%AA%E4%BA%BA%E5%8D%9A%E5%AE%A2%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</guid>
+      <description>&lt;h1 id=&#34;个人博客搭建&#34;&gt;个人博客搭建&lt;/h1&gt;
+&lt;p&gt;==========================================================&lt;/p&gt;
+&lt;h2 id=&#34;part-1-hugo搭建并在本地预览&#34;&gt;Part 1. hugo搭建并在本地预览&lt;/h2&gt;
+&lt;h3 id=&#34;251110&#34;&gt;25.11.10.&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;创建博客总站&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;新建文件夹，存放你的博客。在该文件夹下运行&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;hugo new site .&lt;br&gt;
+-初始化站点&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;2&#34;&gt;
+&lt;li&gt;创建一篇文章&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;hugo new posts/这篇博客的名字.md&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;然后，你可以看到在content/posts目录下多了一个md文档&lt;/li&gt;
+&lt;li&gt;编辑完成后将draft改为false，否则不在网页上显示&lt;/li&gt;
+&lt;/ul&gt;
+&lt;ol start=&#34;3&#34;&gt;
+&lt;li&gt;主题&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;git clone你喜欢的主题，并将文件复制到themes文件夹下&lt;/li&gt;
+&lt;li&gt;在hugo.toml（参数文档）中增加：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;theme = &amp;ldquo;hugo-PaperMod&amp;rdquo;
+&lt;strong&gt;别忘记双引号！&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;4&#34;&gt;
+&lt;li&gt;其他设置&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;在hugo.toml（参数文档）中&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;[params]&lt;br&gt;
+description = &amp;ldquo;my first blog&amp;rdquo;&lt;br&gt;
+author = &amp;ldquo;pearl&amp;rdquo;&lt;br&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ol start=&#34;5&#34;&gt;
+&lt;li&gt;本地预览&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;终端输入&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;hugo server&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;打开终端显示的域名即可&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;251111&#34;&gt;25.11.11&lt;/h3&gt;
+&lt;h4 id=&#34;1-补充wsl中配置代理&#34;&gt;1. 补充：wsl中配置代理&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;之前登录时wsl会提示：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;wsl: 检测到 localhost 代理配置，但未镜像到 WSL。NAT 模式下的 WSL 不支持 localhost 代理。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;这句话有两点值得注意&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;NAT模式：相当于wsl2运行在一个小虚拟机中，该虚拟机有自己的ip：通常为172.&lt;/li&gt;
+&lt;li&gt;镜像模式：作为localhost（windows本机）的镜像映射，windows有啥，wsl就有啥&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h5 id=&#34;配置wsl镜像&#34;&gt;配置WSL镜像&lt;/h5&gt;
+&lt;ol&gt;
+&lt;li&gt;windows的用户目录（30743）下新建建立新文件.wslconfig并写入：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;[wsl2]
+
+networkingMode=mirrored&amp;lt;
+
+autoProxy=true
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol start=&#34;2&#34;&gt;
+&lt;li&gt;重启wsl 提示消失，wsl可以访问github&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;part-2-部署到git-page&#34;&gt;Part 2. 部署到git page&lt;/h2&gt;
+&lt;h3 id=&#34;251114&#34;&gt;25.11.14&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;根据网上“hugo + git page”教程配置即可&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;注意&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

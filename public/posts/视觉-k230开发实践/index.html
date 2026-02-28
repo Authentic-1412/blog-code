@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>视觉_K230开发实践 | pearl blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="记录学习k230的过程
+25.11.11 准备工作、学习摄像模块
+准备工作
+
+固件烧录
+例程复现
+找到了ocr（文字识别）现成例程 
+小声：结合多平台教程文档，如01studio或嘉楠等等，这个没有的例程，另一个说不定有呢
+
+摄像模块
+
+k230摄像头架构
+
+
+板子最多搭载三个摄像头
+每个摄像头可以接入三个不同的处理模块（对输入图像进行加工处理）
+每个模块（camera_device）有三个输出通道，可以多输出并行
+
+
+摄像头模块编程
+
+
+
+sensor基础语法
+
+创建处理模块
+
+
+
+1
+2
+
+
+    from media.sensor import *
+    sensor = Sensor(id ,width ,height ,fps) # 实例化，对应架构中的处理模块
+
+
+
+
+id：摄像头id，默认为2
+width ,height ,fps:最大输出图像参数
+
+
+
+设置图像输出大小和位置
+
+
+
+1
+2
+3
+4
+
+
+    sensor.reset() # 初始化sensor对象及传感器
+
+    sensor.set_framesize(chn=CAM_CHN_ID_0, width=640, height=480)
+    sensor.set_framesize(chn=CAM_CHN_ID_3, framesize = Sensor.VGA)
+
+
+
+
+framesize参数对应width、height，表示输出图像分辨率，二者作用相同。
+framesize = Sensor.VGA即表示640*480分辨率，除此之外，还有Sensor.HD等表示分辨率的代号，这些代号统称为图像帧尺寸
+chn:channel_number,表示输出通道，即架构中每个模块的三个输出通道
+
+
+
+设置图像怎么输出、输出位置
+
+
+
+  sensor.set_pixformat(pix_format, chn=CAM_CHN_ID_0)
+
+
+
+pix_format:输出图像的像素格式，即每个像素在计算机中如何存储，也就是RGB三个通道数据用多少位存储。
+常用有：
+RGB565：R for 5 bits ; G for 6 bits ; B for 5 bits 
+RGB888: R G B for 8 bits respectively 
+
+
+
+水平与竖直反转
+
+
+
+  sensor.set_hmirror(True) # 水平
+  sensor.set_vflip(False) # 竖直
+
+
+启动、关闭摄像头
+
+
+
+  sensor.run()
+  sensor.stop()
+
+
+多个摄像头只用启动一次，但要分别关闭">
+<meta name="author" content="pearl">
+<link rel="canonical" href="http://localhost:1313/posts/%E8%A7%86%E8%A7%89-k230%E5%BC%80%E5%8F%91%E5%AE%9E%E8%B7%B5/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.da3211e5ef867bf2b75fd5a6515cfed7195c011e8ab735694e203810a827097b.css" integrity="sha256-2jIR5e&#43;Ge/K3X9WmUVz&#43;1xlcAR6KtzVpTiA4EKgnCXs=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/%E8%A7%86%E8%A7%89-k230%E5%BC%80%E5%8F%91%E5%AE%9E%E8%B7%B5/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            .list::-webkit-scrollbar-thumb {
+                border-color: var(--code-bg);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="pearl blog (Alt + H)">pearl blog</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:1313/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/posts/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/search/" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/tags/" title="Tags">
+                    <span>Tags</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      视觉_K230开发实践
+    </h1>
+    <div class="post-meta"><span title='2025-11-11 21:57:27 +0800 CST'>November 11, 2025</span>&nbsp;·&nbsp;<span>11 min</span>&nbsp;·&nbsp;<span>pearl</span>
+
+</div>
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#251111-%e5%87%86%e5%a4%87%e5%b7%a5%e4%bd%9c%e5%ad%a6%e4%b9%a0%e6%91%84%e5%83%8f%e6%a8%a1%e5%9d%97" aria-label="25.11.11 准备工作、学习摄像模块">25.11.11 准备工作、学习摄像模块</a><ul>
+                        
+                <li>
+                    <a href="#%e5%87%86%e5%a4%87%e5%b7%a5%e4%bd%9c" aria-label="准备工作">准备工作</a></li>
+                <li>
+                    <a href="#%e6%91%84%e5%83%8f%e6%a8%a1%e5%9d%97" aria-label="摄像模块">摄像模块</a></li></ul>
+                </li>
+                <li>
+                    <a href="#251113-gpio" aria-label="25.11.13 GPIO">25.11.13 GPIO</a><ul>
+                        
+                <li>
+                    <a href="#gpio" aria-label="GPIO">GPIO</a></li></ul>
+                </li>
+                <li>
+                    <a href="#251115" aria-label="25.11.15.">25.11.15.</a></li>
+                <li>
+                    <a href="#251119-uart%e5%8f%91%e9%80%81ocr%e7%bb%93%e6%9e%9c" aria-label="25.11.19. UART发送ocr结果">25.11.19. UART发送ocr结果</a><ul>
+                        
+                <li>
+                    <a href="#%e5%8e%9f%e7%90%86%e6%98%8e%e7%a1%ae" aria-label="原理明确">原理明确</a></li>
+                <li>
+                    <a href="#k230%e7%ab%af%e5%8f%91%e9%80%81%e6%95%b0%e6%8d%ae%e4%bb%a3%e7%a0%81" aria-label="k230端发送数据代码">k230端发送数据代码</a></li></ul>
+                </li>
+                <li>
+                    <a href="#26128-%e5%9f%ba%e4%ba%8e%e9%a2%9c%e8%89%b2%e8%89%b2%e5%9d%97%e8%af%86%e5%88%ab%e5%ae%9e%e7%8e%b0%e5%9c%b0%e5%9b%be%e8%af%86%e5%88%ab" aria-label="26.1.28. 基于颜色色块识别实现地图识别">26.1.28. 基于颜色色块识别实现地图识别</a><ul>
+                        
+                <li>
+                    <a href="#1-%e8%af%ad%e6%b3%95%e8%a7%a3%e9%87%8a" aria-label="1. 语法解释">1. 语法解释</a></li>
+                <li>
+                    <a href="#2-%e4%b8%be%e4%be%8b%e5%ae%9a%e4%bd%8d%e6%b0%b4%e6%9e%9c%e4%bd%8d%e7%bd%ae" aria-label="2. 举例：定位水果位置">2. 举例：定位水果位置</a>
+                </li>
+            </ul>
+            </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p><em>记录学习k230的过程</em></p>
+<h2 id="251111-准备工作学习摄像模块">25.11.11 准备工作、学习摄像模块<a hidden class="anchor" aria-hidden="true" href="#251111-准备工作学习摄像模块">#</a></h2>
+<h3 id="准备工作">准备工作<a hidden class="anchor" aria-hidden="true" href="#准备工作">#</a></h3>
+<ol>
+<li>固件烧录</li>
+<li>例程复现</li>
+<li>找到了ocr（文字识别）现成例程 <br>
+小声：<strong>结合多平台教程文档，如01studio或嘉楠等等，这个没有的例程，另一个说不定有呢</strong></li>
+</ol>
+<h3 id="摄像模块">摄像模块<a hidden class="anchor" aria-hidden="true" href="#摄像模块">#</a></h3>
+<ol>
+<li>k230摄像头架构</li>
+</ol>
+<ul>
+<li>板子最多搭载三个摄像头</li>
+<li>每个摄像头可以接入三个不同的处理模块（对输入图像进行加工处理）</li>
+<li>每个模块（camera_device）有三个输出通道，可以多输出并行</li>
+</ul>
+<ol start="2">
+<li>摄像头模块编程</li>
+</ol>
+<ul>
+<li>
+<p>sensor基础语法</p>
+<ul>
+<li><strong>创建处理模块</strong></li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">media.sensor</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sensor</span> <span class="o">=</span> <span class="n">Sensor</span><span class="p">(</span><span class="nb">id</span> <span class="p">,</span><span class="n">width</span> <span class="p">,</span><span class="n">height</span> <span class="p">,</span><span class="n">fps</span><span class="p">)</span> <span class="c1"># 实例化，对应架构中的处理模块</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><blockquote>
+<ol>
+<li>id：摄像头id，默认为2<br></li>
+<li>width ,height ,fps:<strong>最大</strong>输出图像参数</li>
+</ol>
+</blockquote>
+<ul>
+<li><strong>设置图像输出大小和位置</strong><br></li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="n">sensor</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span> <span class="c1"># 初始化sensor对象及传感器</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">sensor</span><span class="o">.</span><span class="n">set_framesize</span><span class="p">(</span><span class="n">chn</span><span class="o">=</span><span class="n">CAM_CHN_ID_0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">640</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">480</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sensor</span><span class="o">.</span><span class="n">set_framesize</span><span class="p">(</span><span class="n">chn</span><span class="o">=</span><span class="n">CAM_CHN_ID_3</span><span class="p">,</span> <span class="n">framesize</span> <span class="o">=</span> <span class="n">Sensor</span><span class="o">.</span><span class="n">VGA</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><blockquote>
+<ol>
+<li>framesize参数对应width、height，表示输出图像分辨率，二者作用相同。<br></li>
+<li>framesize = Sensor.VGA即表示640*480分辨率，除此之外，还有Sensor.HD等表示分辨率的代号，这些代号统称为图像帧尺寸<br></li>
+<li>chn:channel_number,表示输出通道，即架构中每个模块的三个输出通道</li>
+</ol>
+</blockquote>
+<ul>
+<li><strong>设置图像怎么输出、输出位置</strong><br></li>
+</ul>
+<blockquote>
+</blockquote>
+<pre><code>  sensor.set_pixformat(pix_format, chn=CAM_CHN_ID_0)
+</code></pre>
+<blockquote>
+<ol>
+<li>pix_format:输出图像的像素格式，即每个像素在计算机中如何存储，也就是RGB三个通道数据用多少位存储。<br>
+常用有：<br>
+RGB565：R for 5 bits ; G for 6 bits ; B for 5 bits <br>
+RGB888: R G B for 8 bits respectively <br></li>
+</ol>
+</blockquote>
+<ul>
+<li><strong>水平与竖直反转</strong></li>
+</ul>
+<blockquote>
+</blockquote>
+<pre><code>  sensor.set_hmirror(True) # 水平
+  sensor.set_vflip(False) # 竖直
+</code></pre>
+<ul>
+<li><strong>启动、关闭摄像头</strong></li>
+</ul>
+<blockquote>
+</blockquote>
+<pre><code>  sensor.run()
+  sensor.stop()
+</code></pre>
+<blockquote>
+<p>多个摄像头只用启动一次，但要分别关闭</p>
+</blockquote>
+<ul>
+<li><strong>指定通道截一帧图片</strong></li>
+</ul>
+<blockquote>
+</blockquote>
+<pre><code>  sensor.snapshot(chn=CAM_CHN_ID_0)
+</code></pre>
+<blockquote>
+<p>默认为0设备0通道</p>
+</blockquote>
+</li>
+</ul>
+<hr>
+<h2 id="251113-gpio">25.11.13 GPIO<a hidden class="anchor" aria-hidden="true" href="#251113-gpio">#</a></h2>
+<h3 id="gpio">GPIO<a hidden class="anchor" aria-hidden="true" href="#gpio">#</a></h3>
+<ul>
+<li>
+<p><strong>原理明确</strong></p>
+<ul>
+<li>硬件之间的通信必须经过通信协议，常用的通信协议有IIC\SPI\UART\CAN\HTTP等等</li>
+<li>这些“通信协议”是一种规则，在<strong>硬件</strong>上的体现为<strong>实现信息收发的逻辑电路</strong>，可以作为模块嵌入到MPU芯片里。</li>
+</ul>
+<blockquote>
+<p>当然，不是所有的协议都软硬兼修，HTTP协议就是<strong>纯软件协议</strong></p>
+</blockquote>
+<ul>
+<li>通过设置外设的状态，及外设对应的寄存器的值，实现与外界的交互。<br></li>
+</ul>
+<blockquote>
+<p>例如将某引脚（GPIOA_1）设置为输入模式，<em>然后访问指定端口 GPIOx 的 输入数据寄存器（IDR）的值,看引脚的值为高电平还是低电平，外界传给中央的信号</em>（斜体的部分由<code>GPIO_ReadInputDataBit</code>函数完成）</p>
+</blockquote>
+</li>
+<li>
+<p><strong>名词解释</strong></p>
+</li>
+</ul>
+<blockquote>
+<ol>
+<li>P-mos N-mos：三极管，作用相当于受电压控制的开关，它俩区别是，P为低于阈值导通，N为超出阈值导通</li>
+<li>串口：特指UART协议的硬件电路部分，信息流向：<br>
+MPU ——&gt; 引脚 ——&gt; 串口（片内外设的一种） ——&gt; 外接设备（片外外设） （一个串口可能会用到许多引脚）</li>
+<li>外设：片内外设：通信协议等硬件的逻辑电路模块，本质上是把数据、奇偶校验、等等一系列的流程集成到一个电路模块上，可以装在芯片内部；片外外设：与芯片连接的模块，在芯片外面</li>
+</ol>
+</blockquote>
+<ul>
+<li>
+<p><strong>GPIO干嘛用的？</strong><br>
+<strong>四大功能：输入、输出、模拟、复用</strong></p>
+<ul>
+<li><strong>输入</strong></li>
+</ul>
+<ol>
+<li>片内外设向<strong>MPU</strong>输入</li>
+<li>分类
+<ul>
+<li>下拉输入：无外部输入信号时，MPU读到低电平，只有外部输入为高电平时，MPU才能读到高电平</li>
+<li>上拉输入：无外部输入信号时，MPU读到高电平，与上面同理</li>
+<li>悬空输入：引脚的电平状态完全由外部输入决定</li>
+<li>模拟输入：能接受模拟信号，通过ADC（模数转换器）转为数字信号，传递给MPU</li>
+</ul>
+</li>
+</ol>
+<ul>
+<li><strong>输出</strong></li>
+</ul>
+<ol>
+<li>MPU向<strong>片内外设</strong>输出</li>
+<li>分类
+<ul>
+<li>推挽输出：P-mos、N-mos均工作（不同时工作），可以主动输出高、低电平。</li>
+<li>开漏输出：只有N-mos工作，只能主动输出低电平，输出高电平要靠上拉电阻拉上去（内部或者外部的上拉电阻都可以）</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+</blockquote>
+<pre><code>  # micropython
+  from machine import Pin
+  pin = Pin(index, mode, pull=Pin.PULL_NONE, drive=7)
+</code></pre>
+<blockquote>
+<p><code>machine.Pin</code> ：控制引脚的输入输出状态 <br>
+<code>index</code> : 引脚编号<br>
+<code>mode</code>:</p>
+<ul>
+<li><code>Pin.IN</code></li>
+<li><code>Pin.OUT</code><br></li>
+</ul>
+</blockquote>
+<blockquote>
+<p><code>pull</code>: 控制内部上下拉电阻，阻值很大，用于稳定芯片内部逻辑电压</p>
+<ul>
+<li><code>PULL_UP</code></li>
+<li><code>PULL_DOWN</code></li>
+<li><code>PULL_NONE</code>(默认)</li>
+</ul>
+</blockquote>
+<blockquote>
+<p><code>drive</code>: io驱动能力，默认为7</p>
+</blockquote>
+<ul>
+<li><strong>复用</strong></li>
+</ul>
+<ol>
+<li>此时GPIO像一个<strong>容器</strong>，可以对应连接到MPU内部的IIC、SPI、UART等协议的硬件模块，所谓通信协议的硬件模块，本质上是把数据、奇偶校验、等等一系列的流程集成到一个电路模块上，也就是通信协议的物理层面实现，随后该引脚与片外外设通过对应的协议通信。</li>
+<li>一个GPIO不能同时连接多个协议模块，故要通过编程选择。</li>
+<li>**k230芯片共有63个引脚，开发版上可复用引脚有40个，编写代码时用到的pin_index是芯片上引脚的序号，芯片上引脚与开发板上引脚的GPIO序号通常是一致的，例如，<code>fpioa.set_founction(3, FPIOA.UART0_TXD)</code>这里的<code>3</code>在芯片上为第三个引脚，在开发板上为<code>GPIO3</code>。如果某个芯片引脚的序号在GPIO上没有对应的序号，则说明这个引脚可能被其他外设占用了（比如串口的GH1.25-4P座子）</li>
+<li>需要注意的是，GPIO和UART、IIC等功能是并列的，由</li>
+</ol>
+<blockquote>
+<pre><code>fpioa = FPIOA()
+fpioa_1 = FPIOA()
+fpioa.set_function(UART_TX_PIN, FPIOA.UART2_TXD)
+fpioa_1.set_function(3, FPIOA.GPIO3)
+</code></pre>
+</blockquote>
+<p>定义.而某个引脚被定义为GPIO后，使用<code>machine.Pin</code>模块定义GPIO的输入、输出、上下拉、驱动能力等</p>
+<ol start="5">
+<li>
+<p>输出模式<code>Pin.OUT</code>时，指推挽输出。推挽输出时上下两个mos管都可以工作，通过上下两个mos管的接入与否直接决定引脚电平高低，体现在编程上是<code>pin.value(1)</code>或<code>pin.value(0)</code>来设置引脚电平，而<code>drive</code>参数用于量化mos管的“拉力”有多强（正相关），不需要通过内部或者外部的上下拉<strong>电阻</strong>来控制引脚电平。以点亮LED灯举例，外部电路从VCC出发，经过电阻、LED二极管、另一端接到引脚。故该引脚配置为高电平时，两边都高，断路；反之通路，电流由外部灌入芯片，故称灌电流。推挽输出模式下，引脚电平高低与PULL的模式无关，故PULL设置为<code>PULL_NONE</code>.PULL用于设置芯片内部<strong>上下拉电阻</strong>状态，该电阻很大，故产生的电流很小。当为开漏输出时，上mos管不能工作，只能输出低电平，则需要一个上拉电阻来产生高电平。这个上拉电阻可以是内部的，即设置PULL为<code>PULL=PULL_UP</code>，也可以是外部的。譬如上例中的LED灌电流，外部电路的VCC是一个很有力的上拉力量，远大于PULL的内部电流，故此时PULL的状态不一定要为上拉，也能正常工作。</p>
+</li>
+<li>
+<p>既然都讲到LED了，简单写一些重要的事项。首先，k230的LED没有使用pwm引脚，不能控制亮度，故rgb值设置为0.5和1是没有任何区别的，都是点亮状态。</p>
+</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">machine</span> <span class="kn">import</span> <span class="n">FPIOA</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fpioa</span> <span class="o">=</span> <span class="n">FPIOA</span><span class="p">()</span> <span class="c1"># 实例化</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># 查看引脚信息</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fpioa</span><span class="o">.</span><span class="n">help</span><span class="p">()</span> <span class="c1"># 所有引脚的详细信息</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fpioa</span><span class="o">.</span><span class="n">help</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># 引脚1的详细信息</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fpioa</span><span class="o">.</span><span class="n">help</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">func</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="c1"># 同上</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fpioa</span><span class="o">.</span><span class="n">help</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">func</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># 功能1的详细信息（功能编码在 [这里](https://wiki.lckfb.com/zh-hans/lushan-pi-k230/basic/gpio-fpioa.html)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># 复用</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fpioa</span><span class="o">.</span><span class="n">set_founction</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">FPIOA</span><span class="o">.</span><span class="n">UART0_TXD</span><span class="p">)</span> <span class="c1"># 把第3个引脚复用为串口0的TX脚</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fpioa</span><span class="o">.</span><span class="n">get_pin_num</span><span class="p">(</span><span class="n">FPIOA</span><span class="o">.</span><span class="n">UART0_TXD</span><span class="p">)</span> <span class="c1"># 哪些引脚被配置为UART0_TXD</span>
+</span></span><span class="line"><span class="cl">    <span class="n">fpioa</span><span class="o">.</span><span class="n">get_pin_func</span><span class="p">(</span><span class="mi">63</span><span class="p">)</span> <span class="c1"># 查看63号引脚的被配置为什么功能</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li><strong>模拟</strong></li>
+</ul>
+<ol>
+<li>通过输入、输出模式配置、电平高低变化模拟通信协议，即把硬件外设的功能通过软件模拟了一遍</li>
+</ol>
+<blockquote>
+<p>k230的GPIO引脚没有adc，不能模拟</p>
+</blockquote>
+</li>
+<li>
+<p><strong>总结</strong></p>
+</li>
+</ul>
+<blockquote>
+<ol>
+<li>GPIO四大功能：输入、输出、模拟、复用</li>
+<li>GPIO可编程，体现为其模拟功能。</li>
+</ol>
+</blockquote>
+<h2 id="251115">25.11.15.<a hidden class="anchor" aria-hidden="true" href="#251115">#</a></h2>
+<ul>
+<li>GPIO各功能代码示例</li>
+</ul>
+<h2 id="251119-uart发送ocr结果">25.11.19. UART发送ocr结果<a hidden class="anchor" aria-hidden="true" href="#251119-uart发送ocr结果">#</a></h2>
+<h3 id="原理明确">原理明确<a hidden class="anchor" aria-hidden="true" href="#原理明确">#</a></h3>
+<ul>
+<li>
+<p>不同level的电子设备是不同的圈子，圈子间遵循的通信协议不一样。电脑间遵守USB协议，而嵌入式中一般遵循UART/TTL协议。</p>
+</li>
+<li>
+<p>信息的本质是电压变化，TTL（Transistor-Transistor Logic）将电压变化转变为一串0-1信号，而UART（异步串行通信协议）将这串0-1信号按规则进行组织，譬如组织为</p>
+<blockquote>
+<p>起始位&ndash;数据位&ndash;校验位&ndash;终止位<br></p>
+</blockquote>
+</li>
+<li>
+<p>随后将组织好的信号传输出去，对面再按这个规则解密就好啦！当然，这是同一圈子内通信</p>
+</li>
+<li>
+<p>不同圈子之间通信就要涉及硬件电路了，结合之前片内外设的定义，用硬件电路实现通信并不难理解。比如电脑和单片机间的通信就要通过usb转ttl模块来完成。</p>
+</li>
+</ul>
+<h3 id="k230端发送数据代码">k230端发送数据代码<a hidden class="anchor" aria-hidden="true" href="#k230端发送数据代码">#</a></h3>
+<details><summary>点击展开查看 OCR 源码</summary>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span><span class="lnt">117
+</span><span class="lnt">118
+</span><span class="lnt">119
+</span><span class="lnt">120
+</span><span class="lnt">121
+</span><span class="lnt">122
+</span><span class="lnt">123
+</span><span class="lnt">124
+</span><span class="lnt">125
+</span><span class="lnt">126
+</span><span class="lnt">127
+</span><span class="lnt">128
+</span><span class="lnt">129
+</span><span class="lnt">130
+</span><span class="lnt">131
+</span><span class="lnt">132
+</span><span class="lnt">133
+</span><span class="lnt">134
+</span><span class="lnt">135
+</span><span class="lnt">136
+</span><span class="lnt">137
+</span><span class="lnt">138
+</span><span class="lnt">139
+</span><span class="lnt">140
+</span><span class="lnt">141
+</span><span class="lnt">142
+</span><span class="lnt">143
+</span><span class="lnt">144
+</span><span class="lnt">145
+</span><span class="lnt">146
+</span><span class="lnt">147
+</span><span class="lnt">148
+</span><span class="lnt">149
+</span><span class="lnt">150
+</span><span class="lnt">151
+</span><span class="lnt">152
+</span><span class="lnt">153
+</span><span class="lnt">154
+</span><span class="lnt">155
+</span><span class="lnt">156
+</span><span class="lnt">157
+</span><span class="lnt">158
+</span><span class="lnt">159
+</span><span class="lnt">160
+</span><span class="lnt">161
+</span><span class="lnt">162
+</span><span class="lnt">163
+</span><span class="lnt">164
+</span><span class="lnt">165
+</span><span class="lnt">166
+</span><span class="lnt">167
+</span><span class="lnt">168
+</span><span class="lnt">169
+</span><span class="lnt">170
+</span><span class="lnt">171
+</span><span class="lnt">172
+</span><span class="lnt">173
+</span><span class="lnt">174
+</span><span class="lnt">175
+</span><span class="lnt">176
+</span><span class="lnt">177
+</span><span class="lnt">178
+</span><span class="lnt">179
+</span><span class="lnt">180
+</span><span class="lnt">181
+</span><span class="lnt">182
+</span><span class="lnt">183
+</span><span class="lnt">184
+</span><span class="lnt">185
+</span><span class="lnt">186
+</span><span class="lnt">187
+</span><span class="lnt">188
+</span><span class="lnt">189
+</span><span class="lnt">190
+</span><span class="lnt">191
+</span><span class="lnt">192
+</span><span class="lnt">193
+</span><span class="lnt">194
+</span><span class="lnt">195
+</span><span class="lnt">196
+</span><span class="lnt">197
+</span><span class="lnt">198
+</span><span class="lnt">199
+</span><span class="lnt">200
+</span><span class="lnt">201
+</span><span class="lnt">202
+</span><span class="lnt">203
+</span><span class="lnt">204
+</span><span class="lnt">205
+</span><span class="lnt">206
+</span><span class="lnt">207
+</span><span class="lnt">208
+</span><span class="lnt">209
+</span><span class="lnt">210
+</span><span class="lnt">211
+</span><span class="lnt">212
+</span><span class="lnt">213
+</span><span class="lnt">214
+</span><span class="lnt">215
+</span><span class="lnt">216
+</span><span class="lnt">217
+</span><span class="lnt">218
+</span><span class="lnt">219
+</span><span class="lnt">220
+</span><span class="lnt">221
+</span><span class="lnt">222
+</span><span class="lnt">223
+</span><span class="lnt">224
+</span><span class="lnt">225
+</span><span class="lnt">226
+</span><span class="lnt">227
+</span><span class="lnt">228
+</span><span class="lnt">229
+</span><span class="lnt">230
+</span><span class="lnt">231
+</span><span class="lnt">232
+</span><span class="lnt">233
+</span><span class="lnt">234
+</span><span class="lnt">235
+</span><span class="lnt">236
+</span><span class="lnt">237
+</span><span class="lnt">238
+</span><span class="lnt">239
+</span><span class="lnt">240
+</span><span class="lnt">241
+</span><span class="lnt">242
+</span><span class="lnt">243
+</span><span class="lnt">244
+</span><span class="lnt">245
+</span><span class="lnt">246
+</span><span class="lnt">247
+</span><span class="lnt">248
+</span><span class="lnt">249
+</span><span class="lnt">250
+</span><span class="lnt">251
+</span><span class="lnt">252
+</span><span class="lnt">253
+</span><span class="lnt">254
+</span><span class="lnt">255
+</span><span class="lnt">256
+</span><span class="lnt">257
+</span><span class="lnt">258
+</span><span class="lnt">259
+</span><span class="lnt">260
+</span><span class="lnt">261
+</span><span class="lnt">262
+</span><span class="lnt">263
+</span><span class="lnt">264
+</span><span class="lnt">265
+</span><span class="lnt">266
+</span><span class="lnt">267
+</span><span class="lnt">268
+</span><span class="lnt">269
+</span><span class="lnt">270
+</span><span class="lnt">271
+</span><span class="lnt">272
+</span><span class="lnt">273
+</span><span class="lnt">274
+</span><span class="lnt">275
+</span><span class="lnt">276
+</span><span class="lnt">277
+</span><span class="lnt">278
+</span><span class="lnt">279
+</span><span class="lnt">280
+</span><span class="lnt">281
+</span><span class="lnt">282
+</span><span class="lnt">283
+</span><span class="lnt">284
+</span><span class="lnt">285
+</span><span class="lnt">286
+</span><span class="lnt">287
+</span><span class="lnt">288
+</span><span class="lnt">289
+</span><span class="lnt">290
+</span><span class="lnt">291
+</span><span class="lnt">292
+</span><span class="lnt">293
+</span><span class="lnt">294
+</span><span class="lnt">295
+</span><span class="lnt">296
+</span><span class="lnt">297
+</span><span class="lnt">298
+</span><span class="lnt">299
+</span><span class="lnt">300
+</span><span class="lnt">301
+</span><span class="lnt">302
+</span><span class="lnt">303
+</span><span class="lnt">304
+</span><span class="lnt">305
+</span><span class="lnt">306
+</span><span class="lnt">307
+</span><span class="lnt">308
+</span><span class="lnt">309
+</span><span class="lnt">310
+</span><span class="lnt">311
+</span><span class="lnt">312
+</span><span class="lnt">313
+</span><span class="lnt">314
+</span><span class="lnt">315
+</span><span class="lnt">316
+</span><span class="lnt">317
+</span><span class="lnt">318
+</span><span class="lnt">319
+</span><span class="lnt">320
+</span><span class="lnt">321
+</span><span class="lnt">322
+</span><span class="lnt">323
+</span><span class="lnt">324
+</span><span class="lnt">325
+</span><span class="lnt">326
+</span><span class="lnt">327
+</span><span class="lnt">328
+</span><span class="lnt">329
+</span><span class="lnt">330
+</span><span class="lnt">331
+</span><span class="lnt">332
+</span><span class="lnt">333
+</span><span class="lnt">334
+</span><span class="lnt">335
+</span><span class="lnt">336
+</span><span class="lnt">337
+</span><span class="lnt">338
+</span><span class="lnt">339
+</span><span class="lnt">340
+</span><span class="lnt">341
+</span><span class="lnt">342
+</span><span class="lnt">343
+</span><span class="lnt">344
+</span><span class="lnt">345
+</span><span class="lnt">346
+</span><span class="lnt">347
+</span><span class="lnt">348
+</span><span class="lnt">349
+</span><span class="lnt">350
+</span><span class="lnt">351
+</span><span class="lnt">352
+</span><span class="lnt">353
+</span><span class="lnt">354
+</span><span class="lnt">355
+</span><span class="lnt">356
+</span><span class="lnt">357
+</span><span class="lnt">358
+</span><span class="lnt">359
+</span><span class="lnt">360
+</span><span class="lnt">361
+</span><span class="lnt">362
+</span><span class="lnt">363
+</span><span class="lnt">364
+</span><span class="lnt">365
+</span><span class="lnt">366
+</span><span class="lnt">367
+</span><span class="lnt">368
+</span><span class="lnt">369
+</span><span class="lnt">370
+</span><span class="lnt">371
+</span><span class="lnt">372
+</span><span class="lnt">373
+</span><span class="lnt">374
+</span><span class="lnt">375
+</span><span class="lnt">376
+</span><span class="lnt">377
+</span><span class="lnt">378
+</span><span class="lnt">379
+</span><span class="lnt">380
+</span><span class="lnt">381
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># ocr源码</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">libs.PipeLine</span> <span class="kn">import</span> <span class="n">PipeLine</span><span class="p">,</span> <span class="n">ScopedTiming</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">libs.AIBase</span> <span class="kn">import</span> <span class="n">AIBase</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">libs.AI2D</span> <span class="kn">import</span> <span class="n">Ai2d</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">os</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">ujson</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">media.media</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">media.sensor</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">nncase_runtime</span> <span class="k">as</span> <span class="nn">nn</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">ulab.numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">time</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">image</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">aicube</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">random</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">gc</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">sys</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">machine</span> <span class="kn">import</span> <span class="n">UART</span><span class="p">,</span><span class="n">FPIOA</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># 自定义OCR检测类</span>
+</span></span><span class="line"><span class="cl">    <span class="k">class</span> <span class="nc">OCRDetectionApp</span><span class="p">(</span><span class="n">AIBase</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">kmodel_path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">model_input_size</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">mask_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">box_threshold</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">rgb888p_size</span><span class="o">=</span><span class="p">[</span><span class="mi">224</span><span class="p">,</span><span class="mi">224</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">display_size</span><span class="o">=</span><span class="p">[</span><span class="mi">1920</span><span class="p">,</span><span class="mi">1080</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">debug_mode</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">kmodel_path</span><span class="p">,</span><span class="n">model_input_size</span><span class="p">,</span><span class="n">rgb888p_size</span><span class="p">,</span><span class="n">debug_mode</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">kmodel_path</span><span class="o">=</span><span class="n">kmodel_path</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 模型输入分辨率</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="o">=</span><span class="n">model_input_size</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 分类阈值</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">mask_threshold</span><span class="o">=</span><span class="n">mask_threshold</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">box_threshold</span><span class="o">=</span><span class="n">box_threshold</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># sensor给到AI的图像分辨率</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="o">=</span><span class="p">[</span><span class="n">ALIGN_UP</span><span class="p">(</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">16</span><span class="p">),</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 显示分辨率</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">display_size</span><span class="o">=</span><span class="p">[</span><span class="n">ALIGN_UP</span><span class="p">(</span><span class="n">display_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">16</span><span class="p">),</span><span class="n">display_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">debug_mode</span><span class="o">=</span><span class="n">debug_mode</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># Ai2d实例，用于实现模型预处理</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">=</span><span class="n">Ai2d</span><span class="p">(</span><span class="n">debug_mode</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 设置Ai2d的输入输出格式和类型</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">.</span><span class="n">set_ai2d_dtype</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">ai2d_format</span><span class="o">.</span><span class="n">NCHW_FMT</span><span class="p">,</span><span class="n">nn</span><span class="o">.</span><span class="n">ai2d_format</span><span class="o">.</span><span class="n">NCHW_FMT</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 配置预处理操作，这里使用了pad和resize，Ai2d支持crop/shift/pad/resize/affine，具体代码请打开/sdcard/libs/AI2D.py查看</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">config_preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">input_image_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">with</span> <span class="n">ScopedTiming</span><span class="p">(</span><span class="s2">&#34;set preprocess config&#34;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">debug_mode</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># 初始化ai2d预处理配置，默认为sensor给到AI的尺寸，您可以通过设置input_image_size自行修改输入尺寸</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ai2d_input_size</span><span class="o">=</span><span class="n">input_image_size</span> <span class="k">if</span> <span class="n">input_image_size</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span>
+</span></span><span class="line"><span class="cl">                <span class="n">top</span><span class="p">,</span><span class="n">bottom</span><span class="p">,</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_padding_param</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">.</span><span class="n">pad</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">top</span><span class="p">,</span><span class="n">bottom</span><span class="p">,</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">interp_method</span><span class="o">.</span><span class="n">tf_bilinear</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">interp_mode</span><span class="o">.</span><span class="n">half_pixel</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">.</span><span class="n">build</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="n">ai2d_input_size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">ai2d_input_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 自定义当前任务的后处理</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">results</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">with</span> <span class="n">ScopedTiming</span><span class="p">(</span><span class="s2">&#34;postprocess&#34;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">debug_mode</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># chw2hwc</span>
+</span></span><span class="line"><span class="cl">                <span class="n">hwc_array</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chw2hwc</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cur_img</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># 这里使用了aicube封装的接口ocr_post_process做后处理,返回的det_boxes结构为[[crop_array_nhwc,[p1_x,p1_y,p2_x,p2_y,p3_x,p3_y,p4_x,p4_y]],...]</span>
+</span></span><span class="line"><span class="cl">                <span class="n">det_boxes</span> <span class="o">=</span> <span class="n">aicube</span><span class="o">.</span><span class="n">ocr_post_process</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][:,:,:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">hwc_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_threshold</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">box_threshold</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="n">det_boxes</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 计算padding参数，在config_preprocess中使用</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">get_padding_param</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 右padding或下padding</span>
+</span></span><span class="line"><span class="cl">            <span class="n">dst_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">dst_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">input_width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">input_high</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ratio_w</span> <span class="o">=</span> <span class="n">dst_w</span> <span class="o">/</span> <span class="n">input_width</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ratio_h</span> <span class="o">=</span> <span class="n">dst_h</span> <span class="o">/</span> <span class="n">input_high</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">ratio_w</span> <span class="o">&lt;</span> <span class="n">ratio_h</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ratio</span> <span class="o">=</span> <span class="n">ratio_w</span>
+</span></span><span class="line"><span class="cl">            <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ratio</span> <span class="o">=</span> <span class="n">ratio_h</span>
+</span></span><span class="line"><span class="cl">            <span class="n">new_w</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="n">ratio</span> <span class="o">*</span> <span class="n">input_width</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">new_h</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="n">ratio</span> <span class="o">*</span> <span class="n">input_high</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">dw</span> <span class="o">=</span> <span class="p">(</span><span class="n">dst_w</span> <span class="o">-</span> <span class="n">new_w</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">            <span class="n">dh</span> <span class="o">=</span> <span class="p">(</span><span class="n">dst_h</span> <span class="o">-</span> <span class="n">new_h</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">            <span class="n">top</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="nb">round</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">bottom</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="nb">round</span><span class="p">(</span><span class="n">dh</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">left</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="nb">round</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">right</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="nb">round</span><span class="p">(</span><span class="n">dw</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="mf">0.1</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span>  <span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># chw2hwc</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">chw2hwc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">features</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ori_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">features</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="n">c_hw_</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">ori_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ori_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">ori_shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hw_c_</span> <span class="o">=</span> <span class="n">c_hw_</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="n">new_array</span> <span class="o">=</span> <span class="n">hw_c_</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="n">hwc_array</span> <span class="o">=</span> <span class="n">new_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">ori_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ori_shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">ori_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">            <span class="k">del</span> <span class="n">c_hw_</span>
+</span></span><span class="line"><span class="cl">            <span class="k">del</span> <span class="n">hw_c_</span>
+</span></span><span class="line"><span class="cl">            <span class="k">del</span> <span class="n">new_array</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="n">hwc_array</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># 自定义OCR识别任务类</span>
+</span></span><span class="line"><span class="cl">    <span class="k">class</span> <span class="nc">OCRRecognitionApp</span><span class="p">(</span><span class="n">AIBase</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">kmodel_path</span><span class="p">,</span><span class="n">model_input_size</span><span class="p">,</span><span class="n">dict_path</span><span class="p">,</span><span class="n">rgb888p_size</span><span class="o">=</span><span class="p">[</span><span class="mi">1920</span><span class="p">,</span><span class="mi">1080</span><span class="p">],</span><span class="n">display_size</span><span class="o">=</span><span class="p">[</span><span class="mi">1920</span><span class="p">,</span><span class="mi">1080</span><span class="p">],</span><span class="n">debug_mode</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">kmodel_path</span><span class="p">,</span><span class="n">model_input_size</span><span class="p">,</span><span class="n">rgb888p_size</span><span class="p">,</span><span class="n">debug_mode</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># kmodel路径</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">kmodel_path</span><span class="o">=</span><span class="n">kmodel_path</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 识别模型输入分辨率</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="o">=</span><span class="n">model_input_size</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">dict_path</span><span class="o">=</span><span class="n">dict_path</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># sensor给到AI的图像分辨率，宽16字节对齐</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="o">=</span><span class="p">[</span><span class="n">ALIGN_UP</span><span class="p">(</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">16</span><span class="p">),</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 视频输出VO分辨率，宽16字节对齐</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">display_size</span><span class="o">=</span><span class="p">[</span><span class="n">ALIGN_UP</span><span class="p">(</span><span class="n">display_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">16</span><span class="p">),</span><span class="n">display_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># debug模式</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">debug_mode</span><span class="o">=</span><span class="n">debug_mode</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">dict_word</span><span class="o">=</span><span class="kc">None</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 读取OCR的字典</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">read_dict</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">=</span><span class="n">Ai2d</span><span class="p">(</span><span class="n">debug_mode</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">.</span><span class="n">set_ai2d_dtype</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">ai2d_format</span><span class="o">.</span><span class="n">RGB_packed</span><span class="p">,</span><span class="n">nn</span><span class="o">.</span><span class="n">ai2d_format</span><span class="o">.</span><span class="n">NCHW_FMT</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 配置预处理操作，这里使用了pad和resize，Ai2d支持crop/shift/pad/resize/affine，具体代码请打开/sdcard/libs/AI2D.py查看</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">config_preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">input_image_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">input_np</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">with</span> <span class="n">ScopedTiming</span><span class="p">(</span><span class="s2">&#34;set preprocess config&#34;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">debug_mode</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ai2d_input_size</span><span class="o">=</span><span class="n">input_image_size</span> <span class="k">if</span> <span class="n">input_image_size</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span>
+</span></span><span class="line"><span class="cl">                <span class="n">top</span><span class="p">,</span><span class="n">bottom</span><span class="p">,</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_padding_param</span><span class="p">(</span><span class="n">ai2d_input_size</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">.</span><span class="n">pad</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">top</span><span class="p">,</span><span class="n">bottom</span><span class="p">,</span><span class="n">left</span><span class="p">,</span><span class="n">right</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">interp_method</span><span class="o">.</span><span class="n">tf_bilinear</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">interp_mode</span><span class="o">.</span><span class="n">half_pixel</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># 如果传入input_np，输入shape为input_np的shape,如果不传入，输入shape为[1,3,ai2d_input_size[1],ai2d_input_size[0]]</span>
+</span></span><span class="line"><span class="cl">                <span class="bp">self</span><span class="o">.</span><span class="n">ai2d</span><span class="o">.</span><span class="n">build</span><span class="p">([</span><span class="n">input_np</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">input_np</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">input_np</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">input_np</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">model_input_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 自定义后处理，results是模型输出的array列表</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">postprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">results</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">with</span> <span class="n">ScopedTiming</span><span class="p">(</span><span class="s2">&#34;postprocess&#34;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">debug_mode</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="n">preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">                <span class="n">output_txt</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">preds</span><span class="p">)):</span>
+</span></span><span class="line"><span class="cl">                    <span class="c1"># 当前识别字符不是字典的最后一个字符并且和前一个字符不重复（去重），加入识别结果字符串</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">if</span> <span class="n">preds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dict_word</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">preds</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">preds</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">output_txt</span> <span class="o">=</span> <span class="n">output_txt</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_word</span><span class="p">[</span><span class="n">preds</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="n">output_txt</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 计算padding参数</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">get_padding_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">src_size</span><span class="p">,</span><span class="n">dst_size</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 右padding或下padding</span>
+</span></span><span class="line"><span class="cl">            <span class="n">dst_w</span> <span class="o">=</span> <span class="n">dst_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">dst_h</span> <span class="o">=</span> <span class="n">dst_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">input_width</span> <span class="o">=</span> <span class="n">src_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">input_high</span> <span class="o">=</span> <span class="n">src_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ratio_w</span> <span class="o">=</span> <span class="n">dst_w</span> <span class="o">/</span> <span class="n">input_width</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ratio_h</span> <span class="o">=</span> <span class="n">dst_h</span> <span class="o">/</span> <span class="n">input_high</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">ratio_w</span> <span class="o">&lt;</span> <span class="n">ratio_h</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ratio</span> <span class="o">=</span> <span class="n">ratio_w</span>
+</span></span><span class="line"><span class="cl">            <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ratio</span> <span class="o">=</span> <span class="n">ratio_h</span>
+</span></span><span class="line"><span class="cl">            <span class="n">new_w</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="n">ratio</span> <span class="o">*</span> <span class="n">input_width</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">new_h</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="n">ratio</span> <span class="o">*</span> <span class="n">input_high</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">dw</span> <span class="o">=</span> <span class="p">(</span><span class="n">dst_w</span> <span class="o">-</span> <span class="n">new_w</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">            <span class="n">dh</span> <span class="o">=</span> <span class="p">(</span><span class="n">dst_h</span> <span class="o">-</span> <span class="n">new_h</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">            <span class="n">top</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="nb">round</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">bottom</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="nb">round</span><span class="p">(</span><span class="n">dh</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">left</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="nb">round</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">right</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">)(</span><span class="nb">round</span><span class="p">(</span><span class="n">dw</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="mf">0.1</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span>  <span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">,</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">read_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict_path</span><span class="o">!=</span><span class="s2">&#34;&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dict_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">line_one</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">100000</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">line_list</span> <span class="o">=</span> <span class="n">line_one</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\r\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="bp">self</span><span class="o">.</span><span class="n">dict_word</span> <span class="o">=</span> <span class="p">{</span><span class="n">num</span><span class="p">:</span> <span class="n">char</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\r</span><span class="s2">&#34;</span><span class="p">,</span> <span class="s2">&#34;&#34;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&#34;</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">,</span> <span class="s2">&#34;&#34;</span><span class="p">)</span> <span class="k">for</span> <span class="n">num</span><span class="p">,</span> <span class="n">char</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">line_list</span><span class="p">)}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">class</span> <span class="nc">OCRDetRec</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">ocr_det_kmodel</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">ocr_rec_kmodel</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">det_input_size</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">rec_input_size</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">dict_path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">mask_threshold</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">box_threshold</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">rgb888p_size</span><span class="o">=</span><span class="p">[</span><span class="mi">1920</span><span class="p">,</span><span class="mi">1080</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">display_size</span><span class="o">=</span><span class="p">[</span><span class="mi">1920</span><span class="p">,</span><span class="mi">1080</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">debug_mode</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># OCR检测模型路径</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">ocr_det_kmodel</span><span class="o">=</span><span class="n">ocr_det_kmodel</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># OCR识别模型路径</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">ocr_rec_kmodel</span><span class="o">=</span><span class="n">ocr_rec_kmodel</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># OCR检测模型输入分辨率</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">det_input_size</span><span class="o">=</span><span class="n">det_input_size</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># OCR识别模型输入分辨率</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">rec_input_size</span><span class="o">=</span><span class="n">rec_input_size</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 字典路径</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">dict_path</span><span class="o">=</span><span class="n">dict_path</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 置信度阈值</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">mask_threshold</span><span class="o">=</span><span class="n">mask_threshold</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># nms阈值</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">box_threshold</span><span class="o">=</span><span class="n">box_threshold</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># sensor给到AI的图像分辨率，宽16字节对齐</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="o">=</span><span class="p">[</span><span class="n">ALIGN_UP</span><span class="p">(</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">16</span><span class="p">),</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 视频输出VO分辨率，宽16字节对齐</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">display_size</span><span class="o">=</span><span class="p">[</span><span class="n">ALIGN_UP</span><span class="p">(</span><span class="n">display_size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">16</span><span class="p">),</span><span class="n">display_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># debug_mode模式</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">debug_mode</span><span class="o">=</span><span class="n">debug_mode</span>
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">ocr_det</span><span class="o">=</span><span class="n">OCRDetectionApp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ocr_det_kmodel</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                        <span class="n">model_input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">det_input_size</span><span class="p">,</span><span class="n">mask_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_threshold</span><span class="p">,</span><span class="n">box_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">box_threshold</span><span class="p">,</span><span class="n">rgb888p_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="p">,</span><span class="n">display_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">display_size</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                        <span class="n">debug_mode</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">ocr_rec</span><span class="o">=</span><span class="n">OCRRecognitionApp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ocr_rec_kmodel</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                        <span class="n">model_input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rec_input_size</span><span class="p">,</span><span class="n">dict_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dict_path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                        <span class="n">rgb888p_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="p">,</span><span class="n">display_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">display_size</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">ocr_det</span><span class="o">.</span><span class="n">config_preprocess</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># run函数</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">input_np</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># 先进行OCR检测</span>
+</span></span><span class="line"><span class="cl">            <span class="n">det_res</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ocr_det</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">input_np</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">boxes</span><span class="o">=</span><span class="p">[]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ocr_res</span><span class="o">=</span><span class="p">[]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">det_res</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># 对得到的每个检测框执行OCR识别</span>
+</span></span><span class="line"><span class="cl">                <span class="bp">self</span><span class="o">.</span><span class="n">ocr_rec</span><span class="o">.</span><span class="n">config_preprocess</span><span class="p">(</span><span class="n">input_image_size</span><span class="o">=</span><span class="p">[</span><span class="n">det</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">det</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span><span class="n">input_np</span><span class="o">=</span><span class="n">det</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ocr_str</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ocr_rec</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">det</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ocr_res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ocr_str</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="n">boxes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">det</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">                <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="n">boxes</span><span class="p">,</span><span class="n">ocr_res</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 绘制OCR检测识别效果</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">draw_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pl</span><span class="p">,</span><span class="n">det_res</span><span class="p">,</span><span class="n">rec_res</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">pl</span><span class="o">.</span><span class="n">osd_img</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">det_res</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># 循环绘制所有检测到的框</span>
+</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">det_res</span><span class="p">)):</span>
+</span></span><span class="line"><span class="cl">                    <span class="c1"># 将原图的坐标点转换成显示的坐标点，循环绘制四条直线，得到一个矩形框</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">x1</span> <span class="o">=</span> <span class="n">det_res</span><span class="p">[</span><span class="n">j</span><span class="p">][(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">y1</span> <span class="o">=</span> <span class="n">det_res</span><span class="p">[</span><span class="n">j</span><span class="p">][(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">x2</span> <span class="o">=</span> <span class="n">det_res</span><span class="p">[</span><span class="n">j</span><span class="p">][((</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span> <span class="o">%</span> <span class="mi">8</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">y2</span> <span class="o">=</span> <span class="n">det_res</span><span class="p">[</span><span class="n">j</span><span class="p">][((</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">8</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">rgb888p_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">pl</span><span class="o">.</span><span class="n">osd_img</span><span class="o">.</span><span class="n">draw_line</span><span class="p">((</span><span class="nb">int</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">y1</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">x2</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">y2</span><span class="p">)),</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span><span class="n">thickness</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="c1"># 在检测框位置显示识别的文字</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">pl</span><span class="o">.</span><span class="n">osd_img</span><span class="o">.</span><span class="n">draw_string_advanced</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x1</span><span class="p">),</span><span class="nb">int</span><span class="p">(</span><span class="n">y1</span><span class="p">),</span><span class="mi">32</span><span class="p">,</span><span class="n">rec_res</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">255</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="vm">__name__</span><span class="o">==</span><span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">UART_TX_PIN</span> <span class="o">=</span> <span class="mi">5</span>
+</span></span><span class="line"><span class="cl">        <span class="n">UART_RX_PIN</span> <span class="o">=</span> <span class="mi">6</span>
+</span></span><span class="line"><span class="cl">        <span class="n">UART_ID</span> <span class="o">=</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">        <span class="n">BAUDRATE</span> <span class="o">=</span> <span class="mi">115200</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 初始化fpioa和uart</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fpioa</span> <span class="o">=</span> <span class="n">FPIOA</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fpioa</span><span class="o">.</span><span class="n">set_function</span><span class="p">(</span><span class="n">UART_TX_PIN</span><span class="p">,</span> <span class="n">FPIOA</span><span class="o">.</span><span class="n">UART2_TXD</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fpioa</span><span class="o">.</span><span class="n">set_function</span><span class="p">(</span><span class="n">UART_RX_PIN</span><span class="p">,</span> <span class="n">FPIOA</span><span class="o">.</span><span class="n">UART2_RXD</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">uart</span> <span class="o">=</span> <span class="n">UART</span><span class="p">(</span><span class="n">UART_ID</span> <span class="p">,</span> <span class="n">BAUDRATE</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">fpioa</span><span class="o">.</span><span class="n">help</span><span class="p">(</span><span class="mi">12</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="n">fpioa</span><span class="o">.</span><span class="n">help</span><span class="p">(</span><span class="mi">13</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 显示模式，可以选择&#34;hdmi&#34;、&#34;lcd3_5&#34;(3.5寸mipi屏)和&#34;lcd2_4&#34;(2.4寸mipi屏)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># 配置显示模式</span>
+</span></span><span class="line"><span class="cl">        <span class="n">display</span><span class="o">=</span><span class="s2">&#34;lcd3_5&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">display</span><span class="o">==</span><span class="s2">&#34;hdmi&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">display_mode</span><span class="o">=</span><span class="s1">&#39;hdmi&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">display_size</span><span class="o">=</span><span class="p">[</span><span class="mi">1920</span><span class="p">,</span><span class="mi">1080</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">elif</span> <span class="n">display</span><span class="o">==</span><span class="s2">&#34;lcd3_5&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">display_mode</span><span class="o">=</span> <span class="s1">&#39;st7701&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">display_size</span><span class="o">=</span><span class="p">[</span><span class="mi">800</span><span class="p">,</span><span class="mi">480</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">elif</span> <span class="n">display</span><span class="o">==</span><span class="s2">&#34;lcd2_4&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">display_mode</span><span class="o">=</span> <span class="s1">&#39;st7701&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">display_size</span><span class="o">=</span><span class="p">[</span><span class="mi">640</span><span class="p">,</span><span class="mi">480</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">rgb888p_size</span><span class="o">=</span><span class="p">[</span><span class="mi">640</span><span class="p">,</span><span class="mi">360</span><span class="p">]</span> <span class="c1">#特殊尺寸定义 </span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># OCR检测模型路径</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ocr_det_kmodel_path</span><span class="o">=</span><span class="s2">&#34;/sdcard/examples/kmodel/ocr_det_int16.kmodel&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># OCR识别模型路径</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ocr_rec_kmodel_path</span><span class="o">=</span><span class="s2">&#34;/sdcard/examples/kmodel/ocr_rec_int16.kmodel&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># 其他参数</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dict_path</span><span class="o">=</span><span class="s2">&#34;/sdcard/examples/utils/dict.txt&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 系统参数 不可改</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ocr_det_input_size</span><span class="o">=</span><span class="p">[</span><span class="mi">640</span><span class="p">,</span><span class="mi">640</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ocr_rec_input_size</span><span class="o">=</span><span class="p">[</span><span class="mi">512</span><span class="p">,</span><span class="mi">32</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="c1"># 可改</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mask_threshold</span><span class="o">=</span><span class="mf">0.25</span>
+</span></span><span class="line"><span class="cl">        <span class="n">box_threshold</span><span class="o">=</span><span class="mf">0.3</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 初始化PipeLine，只关注传给AI的图像分辨率，显示的分辨率</span>
+</span></span><span class="line"><span class="cl">        <span class="n">pl</span><span class="o">=</span><span class="n">PipeLine</span><span class="p">(</span><span class="n">rgb888p_size</span><span class="o">=</span><span class="n">rgb888p_size</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">display_size</span><span class="o">=</span><span class="n">display_size</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">display_mode</span><span class="o">=</span><span class="n">display_mode</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">display</span> <span class="o">==</span><span class="s2">&#34;lcd2_4&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">pl</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">Sensor</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">1280</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">960</span><span class="p">))</span>  <span class="c1"># 创建PipeLine实例，画面4:3</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">pl</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">Sensor</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">1920</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">1080</span><span class="p">))</span>  <span class="c1"># 创建PipeLine实例</span>
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">            
+</span></span><span class="line"><span class="cl">        <span class="n">ocr</span><span class="o">=</span><span class="n">OCRDetRec</span><span class="p">(</span><span class="n">ocr_det_kmodel_path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">ocr_rec_kmodel_path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">det_input_size</span><span class="o">=</span><span class="n">ocr_det_input_size</span><span class="p">,</span><span class="n">rec_input_size</span><span class="o">=</span><span class="n">ocr_rec_input_size</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">dict_path</span><span class="o">=</span><span class="n">dict_path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">mask_threshold</span><span class="o">=</span><span class="n">mask_threshold</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">box_threshold</span><span class="o">=</span><span class="n">box_threshold</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">rgb888p_size</span><span class="o">=</span><span class="n">rgb888p_size</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">display_size</span><span class="o">=</span><span class="n">display_size</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">clock</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 发送数据的细节处理函数</span>
+</span></span><span class="line"><span class="cl">        <span class="k">def</span> <span class="nf">send_ocr_data</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># 数据清洗：去掉文字里可能存在的逗号或换行，防止破坏协议</span>
+</span></span><span class="line"><span class="cl">                <span class="n">clean_text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c1"># 针对字符串类型数据</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="c1"># 协议格式: @文字,X,Y#</span>
+</span></span><span class="line"><span class="cl">                <span class="n">packet</span> <span class="o">=</span> <span class="s2">&#34;@</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">#&#34;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">clean_text</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="c1"># 编码并发送</span>
+</span></span><span class="line"><span class="cl">                <span class="n">uart</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">packet</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;[UART发送] </span><span class="si">{</span><span class="n">packet</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span> <span class="c1"># 调试用</span>
+</span></span><span class="line"><span class="cl">            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;发送失败: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 发送时间</span>
+</span></span><span class="line"><span class="cl">        <span class="n">last_send_time</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">        <span class="n">SEND_INTERVAL_MS</span> <span class="o">=</span> <span class="mi">100</span> <span class="c1"># 发送间隔100ms 每秒最多10张</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1"># clock.tick()</span>
+</span></span><span class="line"><span class="cl">            <span class="n">os</span><span class="o">.</span><span class="n">exitpoint</span><span class="p">()</span>  <span class="c1"># 防卡死机制</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">img</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">get_frame</span><span class="p">()</span>                  <span class="c1"># 获取当前帧</span>
+</span></span><span class="line"><span class="cl">            <span class="n">boxes</span><span class="p">,</span><span class="n">rec_res</span><span class="o">=</span><span class="n">ocr</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>        <span class="c1"># 推理当前帧</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">boxes</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="n">ocr</span><span class="o">.</span><span class="n">draw_result</span><span class="p">(</span><span class="n">pl</span><span class="p">,</span><span class="n">boxes</span><span class="p">,</span><span class="n">rec_res</span><span class="p">)</span> <span class="c1"># 绘制当前帧推理结果</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="n">boxes</span><span class="p">,</span><span class="n">rec_res</span><span class="p">)</span>              <span class="c1"># 打印结果</span>
+</span></span><span class="line"><span class="cl">                <span class="n">pl</span><span class="o">.</span><span class="n">show_image</span><span class="p">()</span>                     <span class="c1"># 展示当前帧推理结果</span>
+</span></span><span class="line"><span class="cl">                <span class="n">current_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">ticks_ms</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                <span class="n">can_send</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">ticks_diff</span><span class="p">(</span><span class="n">current_time</span><span class="p">,</span> <span class="n">last_send_time</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">SEND_INTERVAL_MS</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">can_send</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1"># target = det_res[0]  # 只发送第一个检测框</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">raw_text</span> <span class="o">=</span> <span class="n">rec_res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># 文本</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">rect</span> <span class="o">=</span> <span class="n">boxes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># 检测框四个角的坐标</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1"># 计算检测框中心点坐标</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">center_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">rect</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rect</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">rect</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">+</span> <span class="n">rect</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span> <span class="o">/</span> <span class="mi">4</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">center_y</span> <span class="o">=</span> <span class="p">(</span><span class="n">rect</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">rect</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">rect</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">+</span> <span class="n">rect</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span> <span class="o">/</span> <span class="mi">4</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                        <span class="c1"># 2. 新增：转换为 STM32 的 240x320 坐标</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1"># 原图宽 640 -&gt; 目标宽 240</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">scaled_x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">center_x</span> <span class="o">/</span> <span class="mi">640</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1920</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1"># 原图高 360 -&gt; 目标高 320 </span>
+</span></span><span class="line"><span class="cl">                        <span class="n">scaled_y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">center_y</span> <span class="o">/</span> <span class="mi">360</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1080</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                        <span class="c1"># 发送检测框中心点坐标</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">send_ocr_data</span><span class="p">(</span><span class="n">raw_text</span><span class="p">,</span> <span class="n">scaled_x</span><span class="p">,</span> <span class="n">scaled_y</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">last_send_time</span> <span class="o">=</span> <span class="n">current_time</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></details>
+<ul>
+<li>
+<p><strong>更改说明</strong></p>
+<ol>
+<li>代码在0-1studio官方ocr例程上改动，更改了主程序部分，添加工具函数<code>send_ocr_data</code></li>
+<li>串口定义</li>
+<li>发送逻辑(主函数)：<br>
+<blockquote>
+<p>捕捉当前帧 ——&gt; 推理识别 ——&gt; 满足发送条件（时间间隔）——&gt; 发送</p>
+</blockquote>
+</li>
+<li>分辨率变化流：<br>
+<blockquote>
+<p>Sensor input (1920*1080) &mdash;&gt; Pipeline (rgb888p：640*360) &mdash;&gt; orc_dec input(640*640) &mdash;&gt; orc_rec input(512*32) &mdash;&gt; output(640*360) &mdash;&gt; send (1920*1080)<br></p>
+</blockquote>
+</li>
+<li>stm32接收到一个坐标和对应的字符串，它需要确定这个坐标数字在实际视野中的位置，也就是比例，故需要事先告诉stm32视野的范围为多少，也就是send时发送的坐标所使用的坐标系（也就是分辨率），它可以为任意（即通过主函数中转换坐标部分实现），声明清楚接受到的数字的“地图边界”是几，即可计算比例与转动角度。</li>
+</ol>
+</li>
+<li>
+<p><strong>代码心得</strong></p>
+<ul>
+<li>
+<p>找到代码逻辑：</p>
+<ul>
+<li>从主函数开始看，搞懂每一行的作用，并链接到哪个模块实现了这个功能</li>
+<li>对各个模块，也就是各个类、实例、方法总体浏览一遍，搞懂每个模块的作用，一句话写注释</li>
+<li><strong>参数传递（重要！）</strong> 模块之间层层嵌套，要理清爽数据流（输入数据经过哪些模块、哪些处理，变成怎样的输出）。分清形参和实参，别被名字骗了</li>
+</ul>
+</li>
+<li>
+<p>有一些逻辑是打包封装好的，譬如Pipeline中的pl.create(),这种背后的工作流就会藏得很深，慢慢修炼吧~</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="26128-基于颜色色块识别实现地图识别">26.1.28. 基于颜色色块识别实现地图识别<a hidden class="anchor" aria-hidden="true" href="#26128-基于颜色色块识别实现地图识别">#</a></h2>
+<h3 id="1-语法解释">1. 语法解释<a hidden class="anchor" aria-hidden="true" href="#1-语法解释">#</a></h3>
+<blockquote>
+</blockquote>
+<pre><code>img = sensor.snapshot()
+blobs = img.find_blobs([black_threshold], pixels_threshold=500, merge=True, margin=15)
+</code></pre>
+<ul>
+<li>
+<p><code>img.find_blobs</code>：寻找色块的函数</p>
+<ul>
+<li>参数</li>
+<li><code>[black_threshold]</code>：列表，其中每个元素是一个元组，例如<code>black_threshold = (0, 20, -10, 10, -10, 10)</code>，用于定义目标颜色的检测阈值，分别描述这个颜色对应的LAB的最大最小值<br>
+可以包含多个颜色，也就是多个元组，寻找时取并集，并自动对每种颜色二进制编码，例如：<br>
+<ul>
+<li>匹配了第一个阈值的色块，code = 1 (二进制 $2^0$)。</li>
+<li>匹配了第二个阈值的色块，code = 2 (二进制 $2^1$)。</li>
+<li>匹配了第三个阈值的色块，code = 4 (二进制 $2^2$)。<br>
+应用时使用CanMV IDE的阈值编辑器确定阈值，达到：目标颜色为白色，其余全部为黑色。滑动阈值调整时会发现，对于六个中的每一个参数，满足目标黑白二值状态的值是一个范围，注意不要取这个范围的端点，因为端点值处于识别变化的临界，易受到外界的干扰，鲁棒性低。要取范围中间的值。</li>
+</ul>
+</li>
+<li><code>pixel_threshold</code>：像素阈值，检测到的总像素小于这个值的色块将会被过滤</li>
+<li><code>merge</code>：合并色块，合并所有没有被过滤的色块。<code>margin</code>参数存在时，还要求这两个色块之间最靠近的像素点距离 $\le$ <code>margin</code>此时函数返回的对象就是合并后的大色块<br>
+若一个色块同时包含了两种颜色（比如你把红苹果和绿叶子合并成一个大色块），这个大色块的code是其中颜色的code之和，它的 code 就会变成 $1 + 2 = 3$。你可以用blob.code()查看</li>
+</ul>
+<p>常用的参数就是这些，下面是其他参数
+<img alt="para" loading="lazy" src="/image/para.png"></p>
+<ul>
+<li>输出
+函数返回一个list：<code>[(x, y, w, h, pixels, cx, cy, rotation, code, count, area, density),(),()...]</code>，这个list的每个元素是一个对象，每个对象有这些属性：
+<ul>
+<li>rect：<code>blob.rect()</code> 描述颜色块的（x,y,w,h）:左上角坐标、width、hight</li>
+<li>pixels：<code>blob.pixels()</code>或<code>blob[4]</code> 色块中的像素数</li>
+<li>cy cx：x和y的中心点</li>
+<li>rotation：目标在画面中是横着的（ $0$ 或 $\pi$）、竖着的（$\pi/2$ 约 1.57）还是斜着的。</li>
+<li>code：颜色编码</li>
+<li>count：合并为该色块的多个色块的数量。只有在调用 image.find_blobs 时设置 merge=True，此数字才会大于1，注意和颜色无关</li>
+<li>area：返回色块周围边框的面积（计算方式为 w * h）</li>
+<li>density：实心色块检测时，密度越小，检测准确度越小
+$$Density = \frac{Pixels（色块实际像素点数）}{Width \times Height（外接矩形的面积）}$$</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-举例定位水果位置">2. 举例：定位水果位置<a hidden class="anchor" aria-hidden="true" href="#2-举例定位水果位置">#</a></h3>
+<p><img alt="map" loading="lazy" src="/image/map.png"></p>
+<details>
+<summary style="cursor: pointer; background-color: #2c3e50; color: white; padding: 10px; border-radius: 5px; margin-bottom: 10px;"><b>点击展开查看源码</b></summary>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span><span class="lnt">117
+</span><span class="lnt">118
+</span><span class="lnt">119
+</span><span class="lnt">120
+</span><span class="lnt">121
+</span><span class="lnt">122
+</span><span class="lnt">123
+</span><span class="lnt">124
+</span><span class="lnt">125
+</span><span class="lnt">126
+</span><span class="lnt">127
+</span><span class="lnt">128
+</span><span class="lnt">129
+</span><span class="lnt">130
+</span><span class="lnt">131
+</span><span class="lnt">132
+</span><span class="lnt">133
+</span><span class="lnt">134
+</span><span class="lnt">135
+</span><span class="lnt">136
+</span><span class="lnt">137
+</span><span class="lnt">138
+</span><span class="lnt">139
+</span><span class="lnt">140
+</span><span class="lnt">141
+</span><span class="lnt">142
+</span><span class="lnt">143
+</span><span class="lnt">144
+</span><span class="lnt">145
+</span><span class="lnt">146
+</span><span class="lnt">147
+</span><span class="lnt">148
+</span><span class="lnt">149
+</span><span class="lnt">150
+</span><span class="lnt">151
+</span><span class="lnt">152
+</span><span class="lnt">153
+</span><span class="lnt">154
+</span><span class="lnt">155
+</span><span class="lnt">156
+</span><span class="lnt">157
+</span><span class="lnt">158
+</span><span class="lnt">159
+</span><span class="lnt">160
+</span><span class="lnt">161
+</span><span class="lnt">162
+</span><span class="lnt">163
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">sys</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">import</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">gc</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">media.sensor</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">media.display</span> <span class="kn">import</span> <span class="o">*</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">from</span> <span class="nn">machine</span> <span class="kn">import</span> <span class="n">UART</span><span class="p">,</span><span class="n">FPIOA</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># 1. 定义颜色阈值 (LAB 空间)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># 黑色网格阈值 (需要根据现场光照微调)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">black_threshold</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># 红色苹果阈值</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#apple_threshold = (30, 70, 40, 80, 10, 60)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#apple_threshold = (26, 100, 7, 109, 127, -10)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">apple_threshold</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">103</span><span class="p">,</span> <span class="mi">89</span><span class="p">,</span> <span class="o">-</span><span class="mi">32</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">DETECT_WIDTH</span> <span class="o">=</span> <span class="n">ALIGN_UP</span><span class="p">(</span><span class="mi">320</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">DETECT_HEIGHT</span> <span class="o">=</span> <span class="mi">240</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">sensor</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uart</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">camera_init</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="k">global</span> <span class="n">sensor</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># construct a Sensor object with default configure</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sensor</span> <span class="o">=</span> <span class="n">Sensor</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">DETECT_WIDTH</span><span class="p">,</span><span class="n">height</span><span class="o">=</span><span class="n">DETECT_HEIGHT</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># sensor reset</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sensor</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># set hmirror</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># sensor.set_hmirror(False)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># sensor vflip</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># sensor.set_vflip(False)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># set chn0 output size</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sensor</span><span class="o">.</span><span class="n">set_framesize</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">DETECT_WIDTH</span><span class="p">,</span><span class="n">height</span><span class="o">=</span><span class="n">DETECT_HEIGHT</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># set chn0 output format</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sensor</span><span class="o">.</span><span class="n">set_pixformat</span><span class="p">(</span><span class="n">Sensor</span><span class="o">.</span><span class="n">RGB565</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># use IDE as display output</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Display</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">Display</span><span class="o">.</span><span class="n">VIRT</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span> <span class="n">DETECT_WIDTH</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">DETECT_HEIGHT</span><span class="p">,</span><span class="n">fps</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">to_ide</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># init media manager</span>
+</span></span><span class="line"><span class="cl">        <span class="n">MediaManager</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># sensor start run</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sensor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">camera_deinit</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="k">global</span> <span class="n">sensor</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># sensor stop run</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sensor</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># deinit display</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Display</span><span class="o">.</span><span class="n">deinit</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># sleep</span>
+</span></span><span class="line"><span class="cl">        <span class="n">os</span><span class="o">.</span><span class="n">exitpoint</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">EXITPOINT_ENABLE_SLEEP</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">time</span><span class="o">.</span><span class="n">sleep_ms</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># release media buffer</span>
+</span></span><span class="line"><span class="cl">        <span class="n">MediaManager</span><span class="o">.</span><span class="n">deinit</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">check_roi</span><span class="p">(</span><span class="n">roi</span><span class="p">,</span> <span class="n">img_w</span><span class="o">=</span><span class="mi">320</span><span class="p">,</span> <span class="n">img_h</span><span class="o">=</span><span class="mi">240</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">rx</span><span class="p">,</span> <span class="n">ry</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">roi</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># 确保起点不小于 0</span>
+</span></span><span class="line"><span class="cl">        <span class="n">rx</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">rx</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ry</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ry</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># 确保宽高不为负数或 0</span>
+</span></span><span class="line"><span class="cl">        <span class="n">rw</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">rw</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">rh</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">rh</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># 确保终点不超出图像边界</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">rx</span> <span class="o">+</span> <span class="n">rw</span> <span class="o">&gt;</span> <span class="n">img_w</span><span class="p">:</span> <span class="n">rw</span> <span class="o">=</span> <span class="n">img_w</span> <span class="o">-</span> <span class="n">rx</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">ry</span> <span class="o">+</span> <span class="n">rh</span> <span class="o">&gt;</span> <span class="n">img_h</span><span class="p">:</span> <span class="n">rh</span> <span class="o">=</span> <span class="n">img_h</span> <span class="o">-</span> <span class="n">ry</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="p">(</span><span class="n">rx</span><span class="p">,</span> <span class="n">ry</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rh</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">find_apples_in_grid</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">os</span><span class="o">.</span><span class="n">exitpoint</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                <span class="n">img</span> <span class="o">=</span> <span class="n">sensor</span><span class="o">.</span><span class="n">snapshot</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="c1"># --- 步骤 A: 寻找黑色网格 (井字线) ---</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># merge=True 将被网格切断的黑色线条合并成一个大的对象</span>
+</span></span><span class="line"><span class="cl">                <span class="c1"># margin=15 确保间距小于 15 像素的黑色部分被视为一体</span>
+</span></span><span class="line"><span class="cl">                <span class="n">blobs</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">find_blobs</span><span class="p">([</span><span class="n">black_threshold</span><span class="p">],</span> <span class="n">pixels_threshold</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">merge</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="n">blobs</span><span class="p">:</span> <span class="c1"># blobs是一个列表，每个元素是一个对象，具有rect、pixels等属性</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">#                print(&#34;type of blobs&#34;,type(blobs)) # list 列表不同位置是对象不同的属性值</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;blobs&#34;</span><span class="p">,</span><span class="n">blobs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="c1"># 寻找面积最大的黑色物体，通常就是整个网格阵列</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">big_blob</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">blobs</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">pixels</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;-----------&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;merge number ares&#34;</span><span class="p">,</span><span class="n">big_blob</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;density&#34;</span><span class="p">,</span><span class="n">big_blob</span><span class="o">.</span><span class="n">density</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;rotation&#34;</span><span class="p">,</span><span class="n">big_blob</span><span class="o">.</span><span class="n">rotation</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">                    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;-----------&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="c1"># 绘制网格的外接矩形（绿色）</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">rect</span> <span class="o">=</span> <span class="n">big_blob</span><span class="o">.</span><span class="n">rect</span><span class="p">()</span> <span class="c1"># 元组 描述颜色块的（x,y,w,h）:左上角坐标、width、hight</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">img</span><span class="o">.</span><span class="n">draw_rectangle</span><span class="p">(</span><span class="n">rect</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">thickness</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="c1"># --- 步骤 B: 逻辑切片 4x4 ---</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span> <span class="o">=</span> <span class="n">rect</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">w_step</span> <span class="o">=</span> <span class="n">w</span> <span class="o">//</span> <span class="mi">4</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">h_step</span> <span class="o">=</span> <span class="n">h</span> <span class="o">//</span> <span class="mi">4</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="n">offset_w</span> <span class="o">=</span> <span class="n">w_step</span> <span class="o">//</span> <span class="mi">5</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">offset_h</span> <span class="o">=</span> <span class="n">h_step</span> <span class="o">//</span> <span class="mi">5</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># 存储发现水果的坐标索引</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span> <span class="c1"># 行号 0, 1, 2, 3</span>
+</span></span><span class="line"><span class="cl">                        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span> <span class="c1"># 列号 0, 1, 2, 3</span>
+</span></span><span class="line"><span class="cl">                            <span class="c1"># 计算当前小格子的感兴趣区域 (ROI)</span>
+</span></span><span class="line"><span class="cl">                            <span class="c1"># 稍微缩小 ROI (加上 5 像素 offset)，避开边缘黑线的干扰</span>
+</span></span><span class="line"><span class="cl">                            <span class="c1"># roi = (x + c * w_step + 5, y + r * h_step + 5, w_step - 10, h_step - 10)</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">roi</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">c</span> <span class="o">*</span> <span class="n">w_step</span> <span class="o">+</span> <span class="n">offset_w</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="n">r</span> <span class="o">*</span> <span class="n">h_step</span> <span class="o">+</span> <span class="n">offset_h</span><span class="p">,</span> <span class="n">w_step</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">offset_w</span><span class="p">,</span> <span class="n">h_step</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">offset_h</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">roi</span> <span class="o">=</span> <span class="n">check_roi</span><span class="p">(</span><span class="n">roi</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                            <span class="c1"># 在这个 ROI 里寻找红色苹果</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">apple_blobs</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">find_blobs</span><span class="p">([</span><span class="n">apple_threshold</span><span class="p">],</span> <span class="n">roi</span><span class="o">=</span><span class="n">roi</span><span class="p">,</span> <span class="n">pixels_threshold</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">apple_blobs</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                                <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;apple density&#34;</span><span class="p">,</span><span class="n">j</span><span class="o">.</span><span class="n">density</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">                                <span class="k">if</span> <span class="n">j</span><span class="o">.</span><span class="n">density</span><span class="p">()</span><span class="o">&gt;=</span><span class="mf">0.7</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                                    <span class="c1"># 标记发现水果的格子（红色）</span>
+</span></span><span class="line"><span class="cl">                                    <span class="n">img</span><span class="o">.</span><span class="n">draw_rectangle</span><span class="p">(</span><span class="n">roi</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">thickness</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                                    <span class="c1"># 记录坐标 (行列索引从 1 开始)</span>
+</span></span><span class="line"><span class="cl">                                    <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">r</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                    <span class="c1"># --- 步骤 C: 打印并发送数据 ---</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">if</span> <span class="n">results</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                        <span class="k">if</span> <span class="n">big_blob</span><span class="o">.</span><span class="n">rotation</span><span class="p">()</span><span class="o">&gt;=</span><span class="mf">1.0</span> <span class="ow">and</span> <span class="n">big_blob</span><span class="o">.</span><span class="n">rotation</span><span class="p">()</span><span class="o">&lt;=</span><span class="mf">1.8</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                            <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;识别结果 (行, 列):&#34;</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                            <span class="c1"># 此处可添加串口代码:</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">uart</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="c1"># 显示处理后的图像</span>
+</span></span><span class="line"><span class="cl">                <span class="n">Display</span><span class="o">.</span><span class="n">show_image</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># 执行识别</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="n">os</span><span class="o">.</span><span class="n">exitpoint</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">EXITPOINT_ENABLE</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">camera_is_init</span> <span class="o">=</span> <span class="kc">False</span>
+</span></span><span class="line"><span class="cl">        <span class="n">UART_TX_PIN</span> <span class="o">=</span> <span class="mi">5</span>
+</span></span><span class="line"><span class="cl">        <span class="n">UART_RX_PIN</span> <span class="o">=</span> <span class="mi">6</span>
+</span></span><span class="line"><span class="cl">        <span class="n">UART_ID</span> <span class="o">=</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">        <span class="n">BAUDRATE</span> <span class="o">=</span> <span class="mi">115200</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1"># 初始化fpioa和uart</span>
+</span></span><span class="line"><span class="cl">        <span class="k">global</span> <span class="n">uart</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fpioa</span> <span class="o">=</span> <span class="n">FPIOA</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fpioa</span><span class="o">.</span><span class="n">set_function</span><span class="p">(</span><span class="n">UART_TX_PIN</span><span class="p">,</span> <span class="n">FPIOA</span><span class="o">.</span><span class="n">UART2_TXD</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fpioa</span><span class="o">.</span><span class="n">set_function</span><span class="p">(</span><span class="n">UART_RX_PIN</span><span class="p">,</span> <span class="n">FPIOA</span><span class="o">.</span><span class="n">UART2_RXD</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">uart</span> <span class="o">=</span> <span class="n">UART</span><span class="p">(</span><span class="n">UART_ID</span> <span class="p">,</span> <span class="n">BAUDRATE</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;camera init&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">camera_init</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;camera capture&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">find_apples_in_grid</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&#34;__main__&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">main</span><span class="p">()</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></details>
+<p><strong>结果</strong></p>
+<p><img alt="detected" loading="lazy" src="/image/detected.png"></p>
+<ul>
+<li><strong>原理</strong></li>
+</ul>
+<ol>
+<li>定位黑色外边框：<code>blobs = img.find_blobs([black_threshold], pixels_threshold=500, merge=True, margin=15)</code>
+为什么只识别外边框，忽略内部网格？
+首先，寻找黑色矩形，在这里是黑色边框，由于<code>pixels_threshold=500</code>的限制，只有最外层大边框内的像素满足条件。<br>
+其次，<code>merge=True</code>,因为网格线间的空白大于15像素，所以合并的是边框上的像素块，但合并后形成的roi覆盖边框及以内的全部区域，而内部小区域被覆盖，故结果仅识别最外层边框</li>
+</ol>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+
+<ul class="share-buttons">
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 视觉_K230开发实践 on x"
+            href="https://x.com/intent/tweet/?text=%e8%a7%86%e8%a7%89_K230%e5%bc%80%e5%8f%91%e5%ae%9e%e8%b7%b5&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2f%25E8%25A7%2586%25E8%25A7%2589-k230%25E5%25BC%2580%25E5%258F%2591%25E5%25AE%259E%25E8%25B7%25B5%2f&amp;hashtags=">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M512 62.554 L 512 449.446 C 512 483.97 483.97 512 449.446 512 L 62.554 512 C 28.03 512 0 483.97 0 449.446 L 0 62.554 C 0 28.03 28.029 0 62.554 0 L 449.446 0 C 483.971 0 512 28.03 512 62.554 Z M 269.951 190.75 L 182.567 75.216 L 56 75.216 L 207.216 272.95 L 63.9 436.783 L 125.266 436.783 L 235.9 310.383 L 332.567 436.783 L 456 436.783 L 298.367 228.367 L 432.367 75.216 L 371.033 75.216 Z M 127.633 110 L 164.101 110 L 383.481 400.065 L 349.5 400.065 Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 视觉_K230开发实践 on linkedin"
+            href="https://www.linkedin.com/shareArticle?mini=true&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2f%25E8%25A7%2586%25E8%25A7%2589-k230%25E5%25BC%2580%25E5%258F%2591%25E5%25AE%259E%25E8%25B7%25B5%2f&amp;title=%e8%a7%86%e8%a7%89_K230%e5%bc%80%e5%8f%91%e5%ae%9e%e8%b7%b5&amp;summary=%e8%a7%86%e8%a7%89_K230%e5%bc%80%e5%8f%91%e5%ae%9e%e8%b7%b5&amp;source=http%3a%2f%2flocalhost%3a1313%2fposts%2f%25E8%25A7%2586%25E8%25A7%2589-k230%25E5%25BC%2580%25E5%258F%2591%25E5%25AE%259E%25E8%25B7%25B5%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-288.985,423.278l0,-225.717l-75.04,0l0,225.717l75.04,0Zm270.539,0l0,-129.439c0,-69.333 -37.018,-101.586 -86.381,-101.586c-39.804,0 -57.634,21.891 -67.617,37.266l0,-31.958l-75.021,0c0.995,21.181 0,225.717 0,225.717l75.02,0l0,-126.056c0,-6.748 0.486,-13.492 2.474,-18.315c5.414,-13.475 17.767,-27.434 38.494,-27.434c27.135,0 38.007,20.707 38.007,51.037l0,120.768l75.024,0Zm-307.552,-334.556c-25.674,0 -42.448,16.879 -42.448,39.002c0,21.658 16.264,39.002 41.455,39.002l0.484,0c26.165,0 42.452,-17.344 42.452,-39.002c-0.485,-22.092 -16.241,-38.954 -41.943,-39.002Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 视觉_K230开发实践 on reddit"
+            href="https://reddit.com/submit?url=http%3a%2f%2flocalhost%3a1313%2fposts%2f%25E8%25A7%2586%25E8%25A7%2589-k230%25E5%25BC%2580%25E5%258F%2591%25E5%25AE%259E%25E8%25B7%25B5%2f&title=%e8%a7%86%e8%a7%89_K230%e5%bc%80%e5%8f%91%e5%ae%9e%e8%b7%b5">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-3.446,265.638c0,-22.964 -18.616,-41.58 -41.58,-41.58c-11.211,0 -21.361,4.457 -28.841,11.666c-28.424,-20.508 -67.586,-33.757 -111.204,-35.278l18.941,-89.121l61.884,13.157c0.756,15.734 13.642,28.29 29.56,28.29c16.407,0 29.706,-13.299 29.706,-29.701c0,-16.403 -13.299,-29.702 -29.706,-29.702c-11.666,0 -21.657,6.792 -26.515,16.578l-69.105,-14.69c-1.922,-0.418 -3.939,-0.042 -5.585,1.036c-1.658,1.073 -2.811,2.761 -3.224,4.686l-21.152,99.438c-44.258,1.228 -84.046,14.494 -112.837,35.232c-7.468,-7.164 -17.589,-11.591 -28.757,-11.591c-22.965,0 -41.585,18.616 -41.585,41.58c0,16.896 10.095,31.41 24.568,37.918c-0.639,4.135 -0.99,8.328 -0.99,12.576c0,63.977 74.469,115.836 166.33,115.836c91.861,0 166.334,-51.859 166.334,-115.836c0,-4.218 -0.347,-8.387 -0.977,-12.493c14.564,-6.47 24.735,-21.034 24.735,-38.001Zm-119.474,108.193c-20.27,20.241 -59.115,21.816 -70.534,21.816c-11.428,0 -50.277,-1.575 -70.522,-21.82c-3.007,-3.008 -3.007,-7.882 0,-10.889c3.003,-2.999 7.882,-3.003 10.885,0c12.777,12.781 40.11,17.317 59.637,17.317c19.522,0 46.86,-4.536 59.657,-17.321c3.016,-2.999 7.886,-2.995 10.885,0.008c3.008,3.011 3.003,7.882 -0.008,10.889Zm-5.23,-48.781c-16.373,0 -29.701,-13.324 -29.701,-29.698c0,-16.381 13.328,-29.714 29.701,-29.714c16.378,0 29.706,13.333 29.706,29.714c0,16.374 -13.328,29.698 -29.706,29.698Zm-160.386,-29.702c0,-16.381 13.328,-29.71 29.714,-29.71c16.369,0 29.689,13.329 29.689,29.71c0,16.373 -13.32,29.693 -29.689,29.693c-16.386,0 -29.714,-13.32 -29.714,-29.693Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 视觉_K230开发实践 on facebook"
+            href="https://facebook.com/sharer/sharer.php?u=http%3a%2f%2flocalhost%3a1313%2fposts%2f%25E8%25A7%2586%25E8%25A7%2589-k230%25E5%25BC%2580%25E5%258F%2591%25E5%25AE%259E%25E8%25B7%25B5%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-106.468,0l0,-192.915l66.6,0l12.672,-82.621l-79.272,0l0,-53.617c0,-22.603 11.073,-44.636 46.58,-44.636l36.042,0l0,-70.34c0,0 -32.71,-5.582 -63.982,-5.582c-65.288,0 -107.96,39.569 -107.96,111.204l0,62.971l-72.573,0l0,82.621l72.573,0l0,192.915l-191.104,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 视觉_K230开发实践 on whatsapp"
+            href="https://api.whatsapp.com/send?text=%e8%a7%86%e8%a7%89_K230%e5%bc%80%e5%8f%91%e5%ae%9e%e8%b7%b5%20-%20http%3a%2f%2flocalhost%3a1313%2fposts%2f%25E8%25A7%2586%25E8%25A7%2589-k230%25E5%25BC%2580%25E5%258F%2591%25E5%25AE%259E%25E8%25B7%25B5%2f">
+            <svg version="1.1" viewBox="0 0 512 512" xml:space="preserve" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M449.446,0c34.525,0 62.554,28.03 62.554,62.554l0,386.892c0,34.524 -28.03,62.554 -62.554,62.554l-386.892,0c-34.524,0 -62.554,-28.03 -62.554,-62.554l0,-386.892c0,-34.524 28.029,-62.554 62.554,-62.554l386.892,0Zm-58.673,127.703c-33.842,-33.881 -78.847,-52.548 -126.798,-52.568c-98.799,0 -179.21,80.405 -179.249,179.234c-0.013,31.593 8.241,62.428 23.927,89.612l-25.429,92.884l95.021,-24.925c26.181,14.28 55.659,21.807 85.658,21.816l0.074,0c98.789,0 179.206,-80.413 179.247,-179.243c0.018,-47.895 -18.61,-92.93 -52.451,-126.81Zm-126.797,275.782l-0.06,0c-26.734,-0.01 -52.954,-7.193 -75.828,-20.767l-5.441,-3.229l-56.386,14.792l15.05,-54.977l-3.542,-5.637c-14.913,-23.72 -22.791,-51.136 -22.779,-79.287c0.033,-82.142 66.867,-148.971 149.046,-148.971c39.793,0.014 77.199,15.531 105.329,43.692c28.128,28.16 43.609,65.592 43.594,105.4c-0.034,82.149 -66.866,148.983 -148.983,148.984Zm81.721,-111.581c-4.479,-2.242 -26.499,-13.075 -30.604,-14.571c-4.105,-1.495 -7.091,-2.241 -10.077,2.241c-2.986,4.483 -11.569,14.572 -14.182,17.562c-2.612,2.988 -5.225,3.364 -9.703,1.12c-4.479,-2.241 -18.91,-6.97 -36.017,-22.23c-13.314,-11.876 -22.304,-26.542 -24.916,-31.026c-2.612,-4.484 -0.279,-6.908 1.963,-9.14c2.016,-2.007 4.48,-5.232 6.719,-7.847c2.24,-2.615 2.986,-4.484 4.479,-7.472c1.493,-2.99 0.747,-5.604 -0.374,-7.846c-1.119,-2.241 -10.077,-24.288 -13.809,-33.256c-3.635,-8.733 -7.327,-7.55 -10.077,-7.688c-2.609,-0.13 -5.598,-0.158 -8.583,-0.158c-2.986,0 -7.839,1.121 -11.944,5.604c-4.105,4.484 -15.675,15.32 -15.675,37.364c0,22.046 16.048,43.342 18.287,46.332c2.24,2.99 31.582,48.227 76.511,67.627c10.685,4.615 19.028,7.371 25.533,9.434c10.728,3.41 20.492,2.929 28.209,1.775c8.605,-1.285 26.499,-10.833 30.231,-21.295c3.732,-10.464 3.732,-19.431 2.612,-21.298c-1.119,-1.869 -4.105,-2.99 -8.583,-5.232Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 视觉_K230开发实践 on telegram"
+            href="https://telegram.me/share/url?text=%e8%a7%86%e8%a7%89_K230%e5%bc%80%e5%8f%91%e5%ae%9e%e8%b7%b5&amp;url=http%3a%2f%2flocalhost%3a1313%2fposts%2f%25E8%25A7%2586%25E8%25A7%2589-k230%25E5%25BC%2580%25E5%258F%2591%25E5%25AE%259E%25E8%25B7%25B5%2f">
+            <svg version="1.1" xml:space="preserve" viewBox="2 2 28 28" height="30px" width="30px" fill="currentColor">
+                <path
+                    d="M26.49,29.86H5.5a3.37,3.37,0,0,1-2.47-1,3.35,3.35,0,0,1-1-2.47V5.48A3.36,3.36,0,0,1,3,3,3.37,3.37,0,0,1,5.5,2h21A3.38,3.38,0,0,1,29,3a3.36,3.36,0,0,1,1,2.46V26.37a3.35,3.35,0,0,1-1,2.47A3.38,3.38,0,0,1,26.49,29.86Zm-5.38-6.71a.79.79,0,0,0,.85-.66L24.73,9.24a.55.55,0,0,0-.18-.46.62.62,0,0,0-.41-.17q-.08,0-16.53,6.11a.59.59,0,0,0-.41.59.57.57,0,0,0,.43.52l4,1.24,1.61,4.83a.62.62,0,0,0,.63.43.56.56,0,0,0,.4-.17L16.54,20l4.09,3A.9.9,0,0,0,21.11,23.15ZM13.8,20.71l-1.21-4q8.72-5.55,8.78-5.55c.15,0,.23,0,.23.16a.18.18,0,0,1,0,.06s-2.51,2.3-7.52,6.8Z" />
+            </svg>
+        </a>
+    </li>
+    <li>
+        <a target="_blank" rel="noopener noreferrer" aria-label="share 视觉_K230开发实践 on ycombinator"
+            href="https://news.ycombinator.com/submitlink?t=%e8%a7%86%e8%a7%89_K230%e5%bc%80%e5%8f%91%e5%ae%9e%e8%b7%b5&u=http%3a%2f%2flocalhost%3a1313%2fposts%2f%25E8%25A7%2586%25E8%25A7%2589-k230%25E5%25BC%2580%25E5%258F%2591%25E5%25AE%259E%25E8%25B7%25B5%2f">
+            <svg version="1.1" xml:space="preserve" width="30px" height="30px" viewBox="0 0 512 512" fill="currentColor"
+                xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+                <path
+                    d="M449.446 0C483.971 0 512 28.03 512 62.554L512 449.446C512 483.97 483.97 512 449.446 512L62.554 512C28.03 512 0 483.97 0 449.446L0 62.554C0 28.03 28.029 0 62.554 0L449.446 0ZM183.8767 87.9921H121.8427L230.6673 292.4508V424.0079H281.3328V292.4508L390.1575 87.9921H328.1233L256 238.2489z" />
+            </svg>
+        </a>
+    </li>
+</ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">pearl blog</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a><script>
+document.querySelectorAll('pre > code').forEach((codeBlock) => {
+    
+    const btn = document.createElement('button');
+    btn.innerHTML = '🪄 AI 诊断';
+    btn.style = 'margin: 10px; padding: 4px 12px; cursor: pointer; border-radius: 6px; background: #333; color: #fff; border: 1px solid #555; font-size: 13px;';
+    
+    
+    btn.onclick = async () => {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '⌛ 分析中...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('https://gemini-worker.xiepearl85.workers.dev/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: codeBlock.innerText })
+            });
+            
+            const data = await response.json();
+            if (data.result) {
+                
+                alert("Gemini 分析建议：\n\n" + data.result);
+            } else {
+                alert("分析失败：" + (data.error || "未知错误"));
+            }
+        } catch (err) {
+            alert("网络错误，请检查 Worker 是否配置正确");
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    };
+
+    
+    codeBlock.parentNode.appendChild(btn);
+});
+</script>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Linux on pearl blog</title>
+    <link>http://localhost:1313/tags/linux/</link>
+    <description>Recent content in Linux on pearl blog</description>
+    <generator>Hugo -- 0.152.2</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 06 Feb 2026 17:09:54 +0800</lastBuildDate>
+    <atom:link href="http://localhost:1313/tags/linux/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>远程服务器常用命令</title>
+      <link>http://localhost:1313/posts/%E8%BF%9C%E7%A8%8B%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/</link>
+      <pubDate>Fri, 06 Feb 2026 17:09:54 +0800</pubDate>
+      <guid>http://localhost:1313/posts/%E8%BF%9C%E7%A8%8B%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;abstract：记录在远程服务器跑代码遇到的问题和常用的命令行语句&lt;/strong&gt;&lt;br&gt;
+&lt;strong&gt;story&lt;/strong&gt;：公用服务器上改代码，显存爆炸后差点把同门进程给鲨了，故作此文以记录&lt;/p&gt;
+&lt;h2 id=&#34;查看gpu状态&#34;&gt;查看GPU状态&lt;/h2&gt;
+&lt;h3 id=&#34;nvidia-smi&#34;&gt;&lt;code&gt;nvidia-smi&lt;/code&gt;:&lt;/h3&gt;
+&lt;p&gt;&lt;img alt=&#34;gpu&#34; loading=&#34;lazy&#34; src=&#34;http://localhost:1313/image/gpu.png&#34;&gt;
+&lt;strong&gt;关注这几个点：&lt;/strong&gt;&lt;br&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;上半张表：GPU信息&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Memory-Usage&lt;/strong&gt;：显存&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Volatile GPU-Util&lt;/strong&gt;：GPU利用率&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;下半张表：进程信息&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;PID&lt;/strong&gt;：进程号（你会发现1152339进程占了两张卡）&lt;/li&gt;
+&lt;li&gt;xorg：Linux的图形化驱动，不用管&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;GPU0上1152339进程占了11个G，这就是我显存炸掉的罪魁祸首！我的进程需要的显存大于24-11=13G，自动卡退了
+这个进程是谁的呢？&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;进程&#34;&gt;进程&lt;/h2&gt;
+&lt;h3 id=&#34;kill--9-1152339&#34;&gt;&lt;code&gt;kill -9 1152339&lt;/code&gt;&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;强行杀死进程&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;ps--u--p-1152339&#34;&gt;&lt;code&gt;ps -u -p 1152339&lt;/code&gt;&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;看看这个进程是谁的&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;ps--ef--grep-1152339&#34;&gt;&lt;code&gt;ps -ef | grep 1152339&lt;/code&gt;&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;搜索所有含有“1152339”名字的进程，并显示完整信息&lt;/li&gt;
+&lt;li&gt;还可以&lt;code&gt;ps -ef | grep yourusername&lt;/code&gt;,查看和你有关的所有进程&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+    <item>
+      <title>远程服务器文件传输</title>
+      <link>http://localhost:1313/posts/%E8%BF%9C%E7%A8%8B%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%96%87%E4%BB%B6%E4%BC%A0%E8%BE%93/</link>
+      <pubDate>Fri, 06 Feb 2026 17:09:54 +0800</pubDate>
+      <guid>http://localhost:1313/posts/%E8%BF%9C%E7%A8%8B%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%96%87%E4%BB%B6%E4%BC%A0%E8%BE%93/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;abstract：如何把一份10G的代码从本地传输到远程服务器&lt;/strong&gt;&lt;br&gt;
+&lt;strong&gt;story&lt;/strong&gt;：原来git也会被push死&lt;/p&gt;
+&lt;p&gt;以传输HSI_ATTACK2代码为例&lt;/p&gt;
+&lt;h1 id=&#34;查看子文件夹大小&#34;&gt;查看子文件夹大小&lt;/h1&gt;
+&lt;p&gt;linux：在母目录下输入：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;du -h &amp;ndash;max-depth=1 | sort -hr&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;-h：hunman redable，人类可读&lt;/li&gt;
+&lt;li&gt;&amp;ndash;max-depth=1：最大深度，为1则只统计下一级目录的大小，不会具体到文件&lt;/li&gt;
+&lt;li&gt;|：管道，把数据传输到sort管道里&lt;/li&gt;
+&lt;li&gt;-hr：按易读数字反向排序，h指明白1G比200M大，r指reverse，逆序&lt;br&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;结果：&lt;br&gt;
+&lt;img alt=&#34;alt text&#34; loading=&#34;lazy&#34; src=&#34;http://localhost:1313/image/du.png&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;把占用大的数据通过rsync传输，git仅传输代码&lt;/strong&gt;&lt;/p&gt;
+&lt;h1 id=&#34;1-git&#34;&gt;1. Git&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;git不能传输过大文件夹，例如这里的10G直接push会连接超时&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;11-gitignore&#34;&gt;1.1. .gitignore&lt;/h2&gt;
+&lt;p&gt;把不想要的文件类型或文件目录写入.gitignore&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;bash:
+nano .gitignore # 创建并打开.gitignore文件
+# 写入
+params/
+logs/
+RESREPORT/
+dataset/
+abundance_matrix/
+# ^X退出编辑
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看文件&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;bash:
+cat .gitignore # 用于查看简短文件 直接将文件内容输出在终端
+less .gitignore # 查看长文件 可翻页 按q退出
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;12-在服务器上建仓库&#34;&gt;1.2. 在服务器上建仓库&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;之前仓库一直都建立在github上，而仓库也可以建立在服务器上，而且仓库可以不托管源代码，只托管代码的“基因”，也就是&amp;ndash;bare，通过克隆仓库复原源代码&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;（本地的wsl上：）&lt;/strong&gt;&lt;br&gt;
+从用du查看的目录大小可以发现，.git托管了所有代码的所有更改，特别臃肿，所以删掉&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;rm -rf .git
+重新初始化(在本地的HSI_ATTACK2目录下)
+git init
+确保已经编辑好.gitignore后，将更改加入暂存区
+git add .
+从暂存区提交到本地仓库（.git）
+git commit -m &amp;ldquo;Initial commit&amp;rdquo;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

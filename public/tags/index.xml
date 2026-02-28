@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Tags on pearl blog</title>
+    <link>http://localhost:1313/tags/</link>
+    <description>Recent content in Tags on pearl blog</description>
+    <generator>Hugo -- 0.152.2</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 14 Feb 2026 19:24:57 +0800</lastBuildDate>
+    <atom:link href="http://localhost:1313/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>D2l</title>
+      <link>http://localhost:1313/tags/d2l/</link>
+      <pubDate>Sat, 14 Feb 2026 19:24:57 +0800</pubDate>
+      <guid>http://localhost:1313/tags/d2l/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Deeplearning</title>
+      <link>http://localhost:1313/tags/deeplearning/</link>
+      <pubDate>Sat, 14 Feb 2026 19:24:57 +0800</pubDate>
+      <guid>http://localhost:1313/tags/deeplearning/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Linux</title>
+      <link>http://localhost:1313/tags/linux/</link>
+      <pubDate>Fri, 06 Feb 2026 17:09:54 +0800</pubDate>
+      <guid>http://localhost:1313/tags/linux/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Wsl</title>
+      <link>http://localhost:1313/tags/wsl/</link>
+      <pubDate>Fri, 06 Feb 2026 17:09:54 +0800</pubDate>
+      <guid>http://localhost:1313/tags/wsl/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>远程开发</title>
+      <link>http://localhost:1313/tags/%E8%BF%9C%E7%A8%8B%E5%BC%80%E5%8F%91/</link>
+      <pubDate>Fri, 06 Feb 2026 17:09:54 +0800</pubDate>
+      <guid>http://localhost:1313/tags/%E8%BF%9C%E7%A8%8B%E5%BC%80%E5%8F%91/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Adversarial Examples</title>
+      <link>http://localhost:1313/tags/adversarial-examples/</link>
+      <pubDate>Mon, 10 Nov 2025 00:00:15 +0800</pubDate>
+      <guid>http://localhost:1313/tags/adversarial-examples/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Deep Learning</title>
+      <link>http://localhost:1313/tags/deep-learning/</link>
+      <pubDate>Mon, 10 Nov 2025 00:00:15 +0800</pubDate>
+      <guid>http://localhost:1313/tags/deep-learning/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>SUGAA</title>
+      <link>http://localhost:1313/tags/sugaa/</link>
+      <pubDate>Mon, 10 Nov 2025 00:00:15 +0800</pubDate>
+      <guid>http://localhost:1313/tags/sugaa/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>
