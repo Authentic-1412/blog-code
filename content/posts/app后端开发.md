@@ -40,3 +40,24 @@ def read_item(item_id: int, q: str | None = None):
 
 # 如何阅读API文档？（以FASTAPI为例）
 
+# 部署代码到服务器上
+
+## 推送到github
+### 生成requirements.txt
+- 使用`pipreqs`包，检测项目中用到的所有库和版本，并写入`requirements.txt`
+> pip install pipreqs
+> pipreqs . --force
+- `.`: 当前目录（终端打开的目录）下所有文件的依赖库
+- `--force`: 强制覆盖，即使已存在requirements文件
+
+## 内网穿透
+- 使用cpolar
+0. `uvicorn app.main:app --host 0.0.0.0 --port 8080`开启你的后端
+1. 下载、注册cpolar
+2. 在“验证”中找到你的Authtoken
+3. 在cmd上运行`cpolar authtoken <你的TOKEN内容>`，将你的token添加到你的环境变量中
+4. cmd上`cpolar http 8080`
+    - 输出一个http开头的随机域名，对应localhost。
+    - 访问api：直接在该随机域名后添加api路径
+    - FASTAPI文档：直接在该随机域名后添加/docs
+- 免费模式，每次重启后端域名都会随机生成，下次开启后端后要重复步骤4，获取新域名。
